@@ -1,0 +1,254 @@
+{
+  "network": [
+    {
+      "connections": [1,2],
+      "distance": [10,2],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+      },
+    {
+      "connections": [0,3],
+      "distance": [10,7],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    },
+    {
+      "connections": [0,3],
+      "distance": [2,3],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    },
+    {
+      "connections": [1,2,4,5],
+      "distance": [7,3,25,3],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    },
+    {
+      "connections": [3,6],
+      "distance": [25,11],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    },
+    {
+      "connections": [3,6],
+      "distance": [3,2],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    },
+    {
+      "connections": [4,5],
+      "distance": [11,2],
+      "links": [{
+        "cores": [
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          },
+          {"fs_available": 100,
+            "fs_brandwith": 2
+          }
+        ]
+      },
+        {
+          "cores": [
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            },
+            {"fs_available": 100,
+              "fs_brandwith": 2
+            }
+          ]
+        }
+
+      ]
+    }
+  ]
+}
