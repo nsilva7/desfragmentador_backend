@@ -8,7 +8,7 @@ public class Options {
     private int erlang;
     private int lambda;
     private int fsrangemin;
-    private int fsrang_max;
+    private int fsrangmax;
 
     public int getTime() {
         return time;
@@ -66,12 +66,12 @@ public class Options {
         this.fsrangemin = fsrangemin;
     }
 
-    public int getFsrang_max() {
-        return fsrang_max;
+    public int getFsrangmax() {
+        return fsrangmax;
     }
 
-    public void setFsrang_max(int fsrang_max) {
-        this.fsrang_max = fsrang_max;
+    public void setFsrangmax(int fsrangmax) {
+        this.fsrangmax = fsrangmax;
     }
 
     @Override
@@ -84,7 +84,7 @@ public class Options {
                 ", erlang=" + erlang +
                 ", lambda=" + lambda +
                 ", fsrangemin=" + fsrangemin +
-                ", fsrang_max=" + fsrang_max +
+                ", fsrang_max=" + fsrangmax +
                 '}';
     }
 }

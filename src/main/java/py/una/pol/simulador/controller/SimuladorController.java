@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import py.una.pol.simulador.model.Core;
 import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.model.Options;
@@ -28,9 +29,12 @@ import java.util.Map;
 @RestController
 public class SimuladorController {
 
+    @CrossOrigin(origins = "http://localhost:4200")
     @PostMapping("/simular")
-    public void simular(@RequestBody Options opciones) {
+    public String simular(@RequestBody Options opciones) {
+
         System.out.println("Opciones: " + opciones);
+        return "SUCCESS";
     }
 
 
