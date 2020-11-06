@@ -8,9 +8,12 @@ import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import py.una.pol.simulador.model.Core;
 import py.una.pol.simulador.model.Link;
+import py.una.pol.simulador.model.Options;
 import py.una.pol.simulador.utils.ResourceReader;
 
 import java.io.IOException;
@@ -24,6 +27,12 @@ import java.util.Map;
 
 @RestController
 public class SimuladorController {
+
+    @PostMapping("/simular")
+    public void simular(@RequestBody Options opciones) {
+        System.out.println("Opciones: " + opciones);
+    }
+
 
     @GetMapping("/getTopology")
     public String getTopología() {
