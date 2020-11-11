@@ -15,7 +15,9 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import py.una.pol.simulador.model.Core;
 import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.model.Options;
+import py.una.pol.simulador.model.Demand;
 import py.una.pol.simulador.utils.ResourceReader;
+import py.una.pol.simulador.utils.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +36,21 @@ public class SimuladorController {
     public String simular(@RequestBody Options opciones) {
 
         System.out.println("Opciones: " + opciones);
+        List<Demand> demands = new ArrayList<>();
+        for (int i = 0; i < opciones.getTime(); i++) {
+            System.out.println("--------------------PARA EL TIEMPO: " + i + "--------------------");
+            demands = Utils.generateDemands(
+                    opciones.getLambda(),
+                    opciones.getTime(),
+                    opciones.getFsrangemin(),
+                    opciones.getFsrangemax(),
+                    14,
+                    opciones.getErlang() / opciones.getLambda());
+            for(Demand demand : demands){
+                System.out.println(demand);
+            }
+        }
+
         return "SUCCESS";
     }
 
