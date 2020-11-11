@@ -37,17 +37,15 @@ public class SimuladorController {
 
         System.out.println("Opciones: " + opciones);
         List<Demand> demands = new ArrayList<>();
+        Graph net = createTopology2("nsfnet.json", 4, opciones.getFswidth(), opciones.getCapacity());
+
         for (int i = 0; i < opciones.getTime(); i++) {
-            System.out.println("--------------------PARA EL TIEMPO: " + i + "--------------------");
             demands = Utils.generateDemands(
-                    opciones.getLambda(),
-                    opciones.getTime(),
-                    opciones.getFsrangemin(),
-                    opciones.getFsrangemax(),
-                    14,
-                    opciones.getErlang() / opciones.getLambda());
+                    opciones.getLambda(), opciones.getTime(),
+                    opciones.getFsrangemin(), opciones.getFsrangemax(),
+                    net.vertexSet().size(), opciones.getErlang() / opciones.getLambda());
             for(Demand demand : demands){
-                System.out.println(demand);
+
             }
         }
 
@@ -57,7 +55,7 @@ public class SimuladorController {
 
     @GetMapping("/getTopology")
     public String getTopología() {
-        Graph g = createTopology();
+        Graph g = createTopology("Networks.json");
         DOTExporter<Integer, Link> exporter =
                 new DOTExporter<>(v -> v.toString().replace('.', '_'));
         exporter.setVertexAttributeProvider((v) -> {
@@ -70,11 +68,11 @@ public class SimuladorController {
         return writer.toString();
     }
 
-    private Graph createTopology() {
+    private Graph createTopology(String fileName) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
-            InputStream is = ResourceReader.getFileFromResourceAsStream("Networks.json");
+            InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
             JsonNode object = objectMapper.readTree(is);
             
             for (int i = 0; i < object.get("network").size(); i++) {
@@ -106,6 +104,41 @@ public class SimuladorController {
             };
              return g;
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private Graph createTopology2(String fileName, int numberOfCores, double fsWidh, int numberOffs) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
+            InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
+            JsonNode object = objectMapper.readTree(is);
+
+            for (int i = 0; i < object.get("network").size(); i++) {
+                g.addVertex(i);
+            }
+            int vertex = 0;
+            for (JsonNode node: object.get("network")) {
+                for (int i = 0; i < node.get("connections").size(); i++) {
+                    int connection = node.get("connections").get(i).intValue();
+                    int distance = node.get("distance").get(i).intValue();
+                    List<Core> cores = new ArrayList<>();
+
+                    for (int j = 0; j < numberOfCores; j++){
+                        Core core = new Core(fsWidh,numberOffs);
+                        cores.add(core);
+                    }
+
+                    Link link = new Link(distance,cores);
+                    g.addEdge(vertex,connection,link);
+                }
+                vertex++;
+            };
+            return g;
         } catch (IOException e) {
             e.printStackTrace();
         }
