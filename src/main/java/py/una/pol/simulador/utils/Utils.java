@@ -8,20 +8,20 @@ import java.util.Random;
 public class Utils {
 
     public static List<Demand> generateDemands(int lambda, int totalTime, int fsMin, int fsMax, int cantNodos, int HT){
-        int i, cantidadDemandas, j, origen, destino, fs, tVida;
+        int i, demandasQuantity, j, source, destination, fs, tLife;
         List<Demand> demands = new ArrayList<>();
         Random rand;
-        cantidadDemandas = poisson(lambda);
-        for (j = 0; j < cantidadDemandas; j++) {
+        demandasQuantity = poisson(lambda);
+        for (j = 0; j < demandasQuantity; j++) {
             rand = new Random();
-            origen = rand.nextInt(cantNodos);
-            destino = rand.nextInt(cantNodos);
+            source = rand.nextInt(cantNodos);
+            destination = rand.nextInt(cantNodos);
             fs = (int) (Math.random() * (fsMax-fsMin+1)) + fsMin;
-            while (origen == destino) {
-                destino = rand.nextInt(cantNodos);
+            while (source == destination) {
+                destination = rand.nextInt(cantNodos);
             }
-            tVida = getLifeTime(HT);
-            demands.add(new Demand(origen, destino, fs, tVida));
+            tLife = getTimeLife(HT);
+            demands.add(new Demand(source, destination, fs, tLife));
         }
         return demands;
     }
@@ -42,7 +42,7 @@ public class Utils {
         return b;
     }
 
-    public static int getLifeTime(int ht) {
+    public static int getTimeLife(int ht) {
         int b;
         double s, a, aux, auxB, auxHT;
         double e = Math.E;

@@ -1,24 +1,24 @@
 package py.una.pol.simulador.model;
 
 public class Demand {
-    private int origin;
+    private int source;
     private int destination;
     private int fs;
     private int timeLife;
 
-    public Demand(int origin, int destination, int fs, int timeLife) {
-        this.origin = origin;
+    public Demand(int source, int destination, int fs, int timeLife) {
+        this.source = source;
         this.destination = destination;
         this.fs = fs;
         this.timeLife = timeLife;
     }
 
-    public int getOrigin() {
-        return origin;
+    public int getSource() {
+        return source;
     }
 
-    public void setOrigin(int origin) {
-        this.origin = origin;
+    public void setSource(int source) {
+        this.source = source;
     }
 
     public int getDestination() {
@@ -48,7 +48,7 @@ public class Demand {
     @Override
     public String toString() {
         return "Demand{" +
-                "Origen=" + origin +
+                "Origen=" + source +
                 ", Destino=" + destination +
                 ", FS=" + fs +
                 ", Tiempo de vida=" + timeLife +
