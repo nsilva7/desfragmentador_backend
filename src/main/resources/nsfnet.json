@@ -38,7 +38,7 @@
     },
     {
       "connections": [7,8,12,13],
-      "distance": [700,800,500,500]
+      "distance": [700,900,500,500]
     },
     {
       "connections": [3,12,13],
@@ -49,12 +49,12 @@
       "distance": [2000,500,300]
     },
     {
-      "connections": [10,9,11],
-      "distance": [800,500,1000]
+      "connections": [9,10,11],
+      "distance": [500,800,500]
     },
     {
-      "connections": [10,9,11],
-      "distance": [1000,500,300]
+      "connections": [9,10,11],
+      "distance": [500,1000,300]
     }
   ]
 }

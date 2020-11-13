@@ -4,6 +4,7 @@ import py.una.pol.simulador.model.Demand;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.jgrapht.Graph;
 
 public class Utils {
 
@@ -67,5 +68,9 @@ public class Utils {
             resultado *= i;
         }
         return resultado;
+    }
+
+    public static void ksp(Graph g, int source, int destination, int k){
+
     }
 }

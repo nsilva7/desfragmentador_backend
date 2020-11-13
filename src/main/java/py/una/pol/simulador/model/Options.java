@@ -3,12 +3,13 @@ package py.una.pol.simulador.model;
 public class Options {
     private int time;
     private String topology;
-    private float fswidth;
+    private float fsWidth;
     private int capacity;
     private int erlang;
     private int lambda;
-    private int fsrangemin;
-    private int fsrangemax;
+    private int fsRangeMin;
+    private int fsRangeMax;
+    private String routingAlg;
 
     public int getTime() {
         return time;
@@ -26,12 +27,12 @@ public class Options {
         this.topology = topology;
     }
 
-    public float getFswidth() {
-        return fswidth;
+    public float getFsWidth() {
+        return fsWidth;
     }
 
-    public void setFswidth(float fswidth) {
-        this.fswidth = fswidth;
+    public void setFsWidth(float fsWidth) {
+        this.fsWidth = fsWidth;
     }
 
     public int getCapacity() {
@@ -58,20 +59,28 @@ public class Options {
         this.lambda = lambda;
     }
 
-    public int getFsrangemin() {
-        return fsrangemin;
+    public int getFsRangeMin() {
+        return fsRangeMin;
     }
 
-    public void setFsrangemin(int fsrangemin) {
-        this.fsrangemin = fsrangemin;
+    public void setFsRangeMin(int fsRangeMin) {
+        this.fsRangeMin = fsRangeMin;
     }
 
-    public int getFsrangemax() {
-        return fsrangemax;
+    public int getFsRangeMax() {
+        return fsRangeMax;
     }
 
-    public void setFsrangmax(int fsrangmax) {
-        this.fsrangemax = fsrangmax;
+    public void setFsRangeMax(int fsRangeMax) {
+        this.fsRangeMax = fsRangeMax;
+    }
+
+    public String getRoutingAlg() {
+        return routingAlg;
+    }
+
+    public void setRoutingAlg(String routingAlg) {
+        this.routingAlg = routingAlg;
     }
 
     @Override
@@ -79,12 +88,13 @@ public class Options {
         return "Options{" +
                 "time=" + time +
                 ", topology='" + topology + '\'' +
-                ", fswidth=" + fswidth +
+                ", fsWidth=" + fsWidth +
                 ", capacity=" + capacity +
                 ", erlang=" + erlang +
                 ", lambda=" + lambda +
-                ", fsrangemin=" + fsrangemin +
-                ", fsrangmax=" + fsrangemax +
+                ", fsRangeMin=" + fsRangeMin +
+                ", fsRangeMax=" + fsRangeMax +
+                ", routingAlg='" + routingAlg + '\'' +
                 '}';
     }
 }
