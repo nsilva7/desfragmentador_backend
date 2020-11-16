@@ -7,6 +7,7 @@ import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
@@ -74,7 +75,12 @@ public class SimuladorController {
 
     @GetMapping("/getTopology")
     public String getTopología() {
-        Graph g = createTopology("Networks.json");
+        Graph g = createTopology2("nsfnet.json",4,12.5,350);
+        KShortestSimplePaths ksp = new KShortestSimplePaths(g);
+
+            //k caminos más cortos entre source y destination de la demanda actual
+            List<GraphPath> kspaths = ksp.getPaths(2, 6, 5);
+            comprobarKspVocConfia(kspaths);
         DOTExporter<Integer, Link> exporter =
                 new DOTExporter<>(v -> v.toString().replace('.', '_'));
         exporter.setVertexAttributeProvider((v) -> {
@@ -133,7 +139,8 @@ public class SimuladorController {
     private Graph createTopology2(String fileName, int numberOfCores, double fsWidh, int numberOffs) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
+            //Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
+            Graph<Integer, Link> g = new SimpleDirectedWeightedGraph<>(Link.class);
             InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
             JsonNode object = objectMapper.readTree(is);
 
@@ -154,6 +161,7 @@ public class SimuladorController {
 
                     Link link = new Link(distance,cores);
                     g.addEdge(vertex,connection,link);
+                    g.setEdgeWeight(link,distance);
                 }
                 vertex++;
             };
