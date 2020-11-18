@@ -5,10 +5,30 @@ import java.util.List;
 public class Link {
     private int distance;
     private List <Core> cores;
+    private int from;
+    private int to;
 
-    public Link(int distance, List<Core> cores) {
+    public Link(int distance, List<Core> cores, int from, int to) {
         this.distance = distance;
         this.cores = cores;
+        this.from = from;
+        this.to = to;
+    }
+
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
+
+    public int getTo() {
+        return to;
+    }
+
+    public void setTo(int to) {
+        this.to = to;
     }
 
     public int getDistance() {
@@ -32,6 +52,8 @@ public class Link {
         return "Link{" +
                 "distance=" + distance +
                 ", cores=" + cores.size() +
+                ", from=" + from +
+                ", to=" + to +
                 '}';
     }
 }

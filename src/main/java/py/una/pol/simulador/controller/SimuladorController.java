@@ -16,23 +16,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import py.una.pol.simulador.model.Core;
-import py.una.pol.simulador.model.Link;
-import py.una.pol.simulador.model.Options;
-import py.una.pol.simulador.model.Demand;
+import py.una.pol.simulador.model.*;
 import py.una.pol.simulador.utils.ResourceReader;
 import py.una.pol.simulador.utils.Utils;
 import py.una.pol.simulador.algorithms.Algorithms;
 
+import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.lang.reflect.Type;
 
 @RestController
@@ -51,19 +46,42 @@ public class SimuladorController {
                     net.vertexSet().size(), options.getErlang() / options.getLambda());
 
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
+            System.out.println("Cantidade de demandas: " + demands.size());
             for(Demand demand : demands){
                 System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
-                List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 2);
                 //comprobarKspVocConfia(kspaths);
+//                Algorithms.fa(net, kspaths, demand, options.getCapacity(), 0);
                 try {
-                    Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
-                    Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
-                    method.invoke(this, net, kspaths, demand, options.getCapacity(), 0);
+                    boolean [] tested = new boolean[4];
+                    Arrays.fill(tested, false);
+                    int core;
+                    while (true){
+                        //core = getCore(3, tested);
+                        core = 0;
+                        System.out.println("CORE: " + core);
+                        Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
+                        Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
+                        Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
+                        System.out.println("----RUTA ESTABLECIDA----");
+                        System.out.println((EstablisedRoute)establisedRoute);
+                        if(establisedRoute == null){
+                            tested[core] = true;//Se marca el core probado
+                            System.out.println("BLOQUEO");
+                            if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
+                                //Bloqueo
+                                break;
+                            }
+                            break;
+                        }else{
+                            //Ruta establecida
+                            Utils.assignFs((EstablisedRoute)establisedRoute, core);
+                            break;
+                        }
+                    }
                 }catch (java.lang.Exception e){
-                    System.out.println("ERROR");
-                    System.out.println(e);
-                    System.out.println(e.getMessage());
+                    e.printStackTrace();
                 }
 
             }
@@ -93,6 +111,16 @@ public class SimuladorController {
         return writer.toString();
     }
 
+    private int getCore(int limit, boolean [] tested){
+        Random r = new Random();
+        int core = r.nextInt(limit);
+        while(tested[core]){
+            core = r.nextInt(limit);
+        }
+        tested[core] = true;
+        return core;
+    }
+
     private Graph createTopology(String fileName) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -117,7 +145,7 @@ public class SimuladorController {
                     }
 
 
-                    Link link = new Link(distance,cores);
+                    Link link = new Link(distance,cores, vertex, i);
                     if(g.addEdge(vertex,connection,link)) {
                         System.out.println("Add edge "+ vertex + " -> " + connection);
                         System.out.println("Link: "+ link);
@@ -159,7 +187,7 @@ public class SimuladorController {
                         cores.add(core);
                     }
 
-                    Link link = new Link(distance,cores);
+                    Link link = new Link(distance,cores, vertex, connection);
                     g.addEdge(vertex,connection,link);
                     g.setEdgeWeight(link,distance);
                 }
