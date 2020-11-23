@@ -2,9 +2,8 @@ package py.una.pol.simulador.utils;
 import org.jgrapht.GraphPath;
 import py.una.pol.simulador.model.Demand;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
 import org.jgrapht.Graph;
 import py.una.pol.simulador.model.EstablisedRoute;
 import py.una.pol.simulador.model.FrecuencySlot;
@@ -78,66 +77,68 @@ public class Utils {
 
     }
 
-    public static int countCuts(Graph graph, List<GraphPath> ksp, int capacity, int core){
-        int[] cutsSlot;
-        ArrayList<Integer> finalCuts = new ArrayList<>();
-        ArrayList<Integer> finalPaths = new ArrayList<>();
-        ArrayList<Integer> fSlots = new ArrayList<>();
+    public static Map countCuts(Graph graph, List<GraphPath> ksp, int capacity, int core, int fs){
+        Map<String, Integer> slotCuts = new HashMap<>();
+        ArrayList<Map<String, Integer>> bestKspSlot = new ArrayList<>();
 
-        ArrayList<Integer> indicesL = new ArrayList<>();
-        int finalPath = 0;
         for (int k = 0; k < ksp.size(); k++) {
-            cutsSlot = numCuts(ksp.get(k), graph, capacity, core);
-            if( cutsSlot != null){
-                if (finalCuts.size() < 1) {//Primera vez entra aca
-                    finalCuts.add(cutsSlot[0]);
-                    finalPaths.add(k);
-                    fSlots.add(cutsSlot[1]);
-                } else if (finalCuts.get(finalCuts.size() - 1) > cutsSlot[0]) {
-                    finalCuts.set(finalCuts.size() - 1, cutsSlot[1]);
-                    finalPaths.set(finalPaths.size() - 1, k);
-                    fSlots.set(fSlots.size() - 1, cutsSlot[1]);
-                } else if (finalCuts.get(finalCuts.size() - 1) == cutsSlot[0]) {
-                    finalCuts.add(cutsSlot[1]);
-                    finalPaths.add(k);
-                    fSlots.add(cutsSlot[1]);
+            System.out.println("----------------------------------");
+            System.out.println(ksp.get(k));
+            slotCuts = numCuts(ksp.get(k), graph, capacity, core, fs);
+            System.out.println("Mejor slot: " + slotCuts.get("slot") + " con " + slotCuts.get("cuts") + " cuts");
+            if(bestKspSlot.size() == 0 || slotCuts.get("cuts") < bestKspSlot.get(0).get("cuts")){ //Primera vez o si encuentra encuentra un resultado mejor (menos cuts)
+                bestKspSlot.clear();//Limpiamos el array porque pueden haber más de un resultado guardado
+                slotCuts.put("ksp", k);//Guardamos el indice del mejor ksp
+                bestKspSlot.add(slotCuts);
+            }else if(slotCuts.get("cuts") == bestKspSlot.get(0).get("cuts")){//Si tienen igual cantidad de cortes guardamos
+                slotCuts.put("ksp", k);
+                bestKspSlot.add(slotCuts);
+            }
+        }
+        System.out.println("Best Ksp Slot");
+        System.out.println(bestKspSlot);
+//        if (slotCuts.size() == 1) //Solo un resultado
+//            return bestKspSlot.get(0);
+
+        int finalPath;
+        finalPath = alignmentCalc(ksp, graph, bestKspSlot, core);
+        return bestKspSlot.get(finalPath);
+    }
+
+
+    public static int alignmentCalc(List<GraphPath> ksp, Graph graph, ArrayList<Map<String, Integer>> kspSlot, int core) {
+        int lessMisalign = -1;
+        int lessMisalignAux = -1;
+        int bestIndex = -1;
+        for (Map<String, Integer> k : kspSlot){
+            lessMisalignAux = countMisalignment(ksp.get(k.get("ksp")), graph, core);
+            if(lessMisalign == -1 || lessMisalignAux < lessMisalign){
+                lessMisalign = lessMisalignAux;
+                bestIndex = k.get("ksp");
+            }
+        }
+        return bestIndex;
+    }
+
+    public static int countMisalignment(GraphPath ksp, Graph graph, int core) {
+        System.out.println("countMisalignment");
+        System.out.println(ksp);
+        System.out.println("LOS VECINOS DE " + ksp.getStartVertex() + " -> " + ksp.getEndVertex() + " SON:");
+        for (Object vertex : ksp.getVertexList()){
+            for (Object neighbour : graph.outgoingEdgesOf(vertex)){
+                System.out.println(neighbour);
+                System.out.println(ksp.getEdgeList().contains(neighbour));
+                if(!ksp.getEdgeList().contains(neighbour)){//Verificamos que el vecino no este en el camino
+                    System.out.println("ES VECINO");
                 }
+                System.out.println("");
             }
         }
 
-        if (finalCuts.size() > 1) {
-            finalPath = alignmentCalc(ksp, graph, capacity, finalPaths, indicesL, fSlots, core);
-        } else if (finalCuts.size() == 1) {
-            finalPath = finalPaths.get(0);
-        } else {
-            System.out.println("Error");
-        }
-
-        return finalPath;
+        return 0;
     }
 
-
-    public static int alignmentCalc(List<GraphPath> ksp, Graph graph, int capacity, ArrayList<Integer> pahts, ArrayList<Integer> cIndexes, ArrayList<Integer> fSlots, int core) {
-        Integer[] alineacion = new Integer[cIndexes.size()];
-        int alineacionAux = 0;
-        int alineacionFinal = 999;
-        int indiceFinal = -1;
-        ArrayList<Integer> desalineado = new ArrayList<Integer>();
-
-        for (int k = 0; k < pahts.size(); k++) {
-
-            alineacionAux = countMisalignment(ksp.get(pahts.get(k)), graph, capacity, cIndexes, fSlots.get(k), core);
-
-            if (alineacionAux < alineacionFinal) {
-                alineacionFinal = alineacionAux;
-                indiceFinal = pahts.get(k);
-            }
-        }
-        System.out.println("Indice Final: " + indiceFinal);
-        return indiceFinal;
-    }
-
-    public static int countMisalignment(GraphPath ksp, Graph graph, int capacity, ArrayList<Integer> cIndexes, int fSlots, int core) {
+    public static int countMisalignment2(GraphPath ksp, Graph graph, int core) {
         int alignAux = 0;
         int actualLink = -1;
         int nextNextLink = -1;
@@ -156,22 +157,22 @@ public class Utils {
                     System.out.println("Error No le salio sgte de sgte");
                     e.printStackTrace();
                 }
-                if (((Link)ksp.getEdgeList().get(actualLink)) != null && iLink != nextLink && iLink != actualLink && iLink != prevLink) {
-                    if (((Link)ksp.getEdgeList().get(actualLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
-                        alignAux = alignAux + 1;
-                    } else {
-                        alignAux = alignAux - 1;
-                    }
-
-                }
-                if (((Link)ksp.getEdgeList().get(nextLink) != null && iLink != actualLink && iLink != nextLink && iLink != prevLink && iLink != nextNextLink)) {
-                    if (((Link)ksp.getEdgeList().get(nextLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
-                        alignAux = alignAux + 1;
-                    } else {
-                        alignAux = alignAux - 1;
-                    }
-
-                }
+//                if (((Link)ksp.getEdgeList().get(actualLink)) != null && iLink != nextLink && iLink != actualLink && iLink != prevLink) {
+//                    if (((Link)ksp.getEdgeList().get(actualLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
+//                        alignAux = alignAux + 1;
+//                    } else {
+//                        alignAux = alignAux - 1;
+//                    }
+//
+//                }
+//                if (((Link)ksp.getEdgeList().get(nextLink) != null && iLink != actualLink && iLink != nextLink && iLink != prevLink && iLink != nextNextLink)) {
+//                    if (((Link)ksp.getEdgeList().get(nextLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
+//                        alignAux = alignAux + 1;
+//                    } else {
+//                        alignAux = alignAux - 1;
+//                    }
+//
+//                }
             }
             prevLink = actualLink;
 
@@ -179,53 +180,41 @@ public class Utils {
         return alignAux;
     }
 
-    public static int[] numCuts(GraphPath  ksp, Graph graph, int capacity, int core) {
-         int cuts = -1;
-        int slots = -1;
-        int[] cutsSlots = new int[2];
+    public static Map numCuts(GraphPath  ksp, Graph graph, int capacity, int core, int fs) {
+        int cuts = -1;
+        int slot = -1;
+        Map<String, Integer> slotCuts = new HashMap<>();
 
-        ArrayList<Integer> cIndexes = new ArrayList<Integer>();
+        ArrayList<Integer> cIndexes;
         int cutAux = 0;
-        cIndexes = searchIndexes(ksp, graph, capacity, core);
+        cIndexes = searchIndexes(ksp, graph, capacity, core, fs);
 
-        if (cIndexes.size() == 1 && cIndexes.get(0) == 0) {
-            cuts = 0;
-            slots = 0;
-        } else {
-            for (int i = 0; i < cIndexes.size(); i++) {
-                System.out.println("KSP.GETLENTH(): " + ksp.getLength());
-                for(int k = 0; k < ksp.getLength() - 2; k++){
-                    System.out.println("k: " + k);
-                    Object nextLink = ksp.getEdgeList().get(k);
-                    if (cIndexes.get(i) != 0 && cIndexes.get(i) < capacity - 1) {
-                        if(((Link) nextLink).getCores().get(core).getFs().get(cIndexes.get(i) - 1).isFree() &&
-                           ((Link) nextLink).getCores().get(core).getFs().get(cIndexes.get(i) + 1).isFree()) {
-                            cutAux = cutAux + 1;
-
-                        }
+        for (int slotIndex : cIndexes) {
+            if (slotIndex != 0){
+                for (Object link : ksp.getEdgeList()) {
+                    if (((Link) link).getCores().get(core).getFs().get(slotIndex - 1).isFree()) {
+                        cutAux++;//Se encontro un lugar vacio en el slot i - 1 del ksp actual
                     }
-
                 }
-                if (cutAux < cuts) {
-                    cuts = cutAux;
-                    slots = i;
-                }
-                cutAux = 0;
             }
+            System.out.println("Para el cIndex: " + slotIndex + ", cuts = " + cutAux);
+            if (cuts == -1 || cutAux < cuts) {
+                cuts = cutAux;
+                slot = slotIndex;
+            }
+            cutAux = 0;
         }
 
-        if (cuts != -1 && slots != -1) {
-            cutsSlots[0] = cuts;
-            cutsSlots[1] = slots;
 
-            return cutsSlots;
-        }
+        slotCuts.put("cuts", cuts);
+        slotCuts.put("slot", slot);
+        return slotCuts;
 
-        return null;
 
     }
 
-    public static ArrayList<Integer> searchIndexes(GraphPath ksp, Graph graph, int capacity, int core){
+
+    public static ArrayList<Integer> searchIndexes(GraphPath ksp, Graph graph, int capacity, int core, int fsQ){
         ArrayList<Integer> indexes = new ArrayList<Integer>();
 
         ArrayList<Integer> cIndexes = new ArrayList<Integer>();
@@ -252,7 +241,7 @@ public class Utils {
             }
         }
         cIndexes.add(indexes.get(0));
-
+        System.out.println("cIndexes: " + cIndexes);
         return cIndexes;
     }
 

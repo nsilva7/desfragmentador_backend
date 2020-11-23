@@ -1,253 +1,55 @@
 {
   "network": [
     {
-      "connections": [1,2],
-      "distance": [10,2],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
-      ]
-      },
-    {
-      "connections": [0,3],
-      "distance": [10,7],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [1,3],
+      "distance": [1,2],
+      "links": [
+        [1,1,0,0,1,1,0,0,1,1,0,0],
+        [1,0,0,0,1,1,1,0,0,0,0,0]
       ]
     },
     {
-      "connections": [0,3],
-      "distance": [2,3],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [0,2,3],
+      "distance": [1,1,1],
+      "links": [
+        [1,1,0,0,1,1,0,0,1,1,0,0],
+        [1,1,0,0,1,1,0,0,0,0,0,0],
+        [0,1,0,0,1,0,0,0,1,1,1,1]
       ]
     },
     {
-      "connections": [1,2,4,5],
-      "distance": [7,3,25,3],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [1,4,5],
+      "distance": [1,1,1],
+      "links": [
+         [1,1,0,0,1,1,0,0,0,0,0,0],
+         [1,0,0,0,0,0,0,0,0,0,0,0],
+         [1,0,0,0,1,0,0,0,0,0,0,0]
       ]
     },
     {
-      "connections": [3,6],
-      "distance": [25,11],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [0,1,4],
+      "distance": [2,1,1],
+      "links": [
+        [1,0,0,0,1,1,1,0,0,0,0,0],
+        [0,1,0,0,1,0,0,0,1,1,1,1],
+        [0,0,0,0,1,1,1,0,0,0,0,0]
       ]
     },
     {
-      "connections": [3,6],
-      "distance": [3,2],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [2,3,5],
+      "distance": [1,1,1],
+      "links": [
+        [1,0,0,0,0,0,0,0,0,0,0,0],
+         [0,0,0,0,1,1,1,0,0,0,0,0],
+        [1,1,0,0,0,1,1,1,0,0,0,0]
       ]
     },
     {
-      "connections": [4,5],
-      "distance": [11,2],
-      "links": [{
-        "cores": [
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          },
-          {"fs_available": 100,
-            "fs_brandwith": 2
-          }
-        ]
-      },
-        {
-          "cores": [
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            },
-            {"fs_available": 100,
-              "fs_brandwith": 2
-            }
-          ]
-        }
-
+      "connections": [2,4],
+      "distance": [1,1],
+      "links": [
+         [1,0,0,0,1,0,0,0,0,0,0,0],
+         [1,1,0,0,0,1,1,1,0,0,0,0]
       ]
     }
   ]

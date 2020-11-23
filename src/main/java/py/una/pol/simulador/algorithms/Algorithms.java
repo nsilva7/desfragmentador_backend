@@ -28,7 +28,6 @@ public class Algorithms {
             GraphPath ksp = kspaths.get(k);
 
             //Se setean los slots libres
-            System.out.println(ksp);
             for(int i = 0; i < capacity; i++){
                 for (Object path: ksp.getEdgeList()){
                     Link link = (Link) path;
@@ -38,15 +37,6 @@ public class Algorithms {
                     }
                 }
             }
-            System.out.println("ESPECTRO DEL PATH: " + ksp.getStartVertex() + " -> " + ksp.getEndVertex());
-            System.out.print("|");
-            for(int i = 0; i < capacity; i++){
-                if(so[i])
-                    System.out.print(" x |");
-                else
-                    System.out.print("  |");
-            }
-            System.out.println("");
             begin = end = count = 0;
             capacity:
             for(int i = 0; i < capacity; i++){
@@ -76,9 +66,9 @@ public class Algorithms {
         if(kspPlaced.size() == 0)
             return null;
         //Ksp ubidados ahora se debe elegir el mejor
-        int path = Utils.countCuts(graph, kspPlaced, capacity, core);
-        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(path), begins.get(path), demand.getFs(), demand.getTimeLife());
-
+        Utils.countCuts(graph, kspPlaced, capacity, core, demand.getFs());
+//        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(path), begins.get(path), demand.getFs(), demand.getTimeLife());
+        EstablisedRoute establisedRoute = null;
         return establisedRoute;
     }
 

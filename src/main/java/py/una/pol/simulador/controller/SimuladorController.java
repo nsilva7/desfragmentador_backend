@@ -8,6 +8,7 @@ import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
@@ -36,6 +37,9 @@ public class SimuladorController {
     @CrossOrigin(origins = "http://localhost:4300")
     @PostMapping("/simular")
     public String simular(@RequestBody Options options) {
+        pruebas();
+        if(1 == 1)
+            return "x";
         System.out.println("Opciones: " + options);
         List<Demand> demands;
         Graph net = createTopology2("nsfnet.json", 4, options.getFsWidth(), options.getCapacity());
@@ -201,12 +205,114 @@ public class SimuladorController {
         return null;
     }
 
+    private Graph createTopologyWithFs(String fileName) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            //Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
+            Graph<Integer, Link> g = new SimpleWeightedGraph<>(Link.class);
+            InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
+            JsonNode object = objectMapper.readTree(is);
+
+            for (int i = 0; i < object.get("network").size(); i++) {
+                g.addVertex(i);
+            }
+            int vertex = 0;
+            for (JsonNode node: object.get("network")) {
+                for (int i = 0; i < node.get("connections").size(); i++) {
+                    int connection = node.get("connections").get(i).intValue();
+                    System.out.println("CONECCTION: " + connection);
+                    int distance = node.get("distance").get(i).intValue();
+                    List<Core> cores = new ArrayList<>();
+
+                    Core core = new Core(12.5,12);
+                    cores.add(core);
+
+                    Link link = new Link(distance,cores, vertex, connection);
+                    int slot = 0;
+                    for (JsonNode coreNode: node.get("links").get(i)) {
+                        link.getCores().get(0).getFs().get(slot).setFree(coreNode.intValue() == 0 ? true : false);
+                        slot++;
+                    }
+//                    g.add
+                    g.addEdge(vertex,connection,link);
+                    g.setEdgeWeight(link,distance);
+                }
+                vertex++;
+            }
+            return g;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
     private void comprobarKspVocConfia(List<GraphPath> kspaths){
         for(GraphPath kspath : kspaths){
             System.out.println("--------De :" + kspath.getStartVertex() + " a :" + kspath.getEndVertex() + "--------");
             for (Object path: kspath.getEdgeList()){
                 System.out.println(path);
             }
+        }
+    }
+
+    private void pruebas(){
+        Graph net = createTopologyWithFs("Networks.json");
+        estadoDeFs(net);
+        Demand demand = new Demand(0,4,1,5);
+        KShortestSimplePaths ksp = new KShortestSimplePaths(net);
+        List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 4);
+        Algorithms.fa(net, kspaths, demand, 12, 0);
+//                try {
+//                    boolean [] tested = new boolean[4];
+//                    Arrays.fill(tested, false);
+//                    int core;
+//                    while (true){
+//                        //core = getCore(3, tested);
+//                        core = 0;
+//                        System.out.println("CORE: " + core);
+//                        Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
+//                        Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
+//                        Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
+//                        System.out.println("----RUTA ESTABLECIDA----");
+//                        System.out.println((EstablisedRoute)establisedRoute);
+//                        if(establisedRoute == null){
+//                            tested[core] = true;//Se marca el core probado
+//                            System.out.println("BLOQUEO");
+//                            if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
+//                                //Bloqueo
+//                                break;
+//                            }
+//                            break;
+//                        }else{
+//                            //Ruta establecida
+//                            Utils.assignFs((EstablisedRoute)establisedRoute, core);
+//                            break;
+//                        }
+//                    }
+//                }catch (java.lang.Exception e){
+//                    e.printStackTrace();
+//                }
+
+
+
+    }
+
+    private void estadoDeFs(Graph net){
+        System.out.println("ESTADO DE LOS FS");
+        Link link;
+        for (Object edge : net.edgeSet()){
+            link = (Link)edge;
+            System.out.println(link.getFrom() + " -> " + link.getTo());
+            System.out.print("|");
+            for(int i = 0; i < 12; i++){
+                if(!link.getCores().get(0).getFs().get(i).isFree())
+                    System.out.print(" x |");
+                else
+                    System.out.print("  |");
+            }
+            System.out.println();
         }
     }
 }

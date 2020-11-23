@@ -50,10 +50,11 @@ public class Link {
     @Override
     public String toString() {
         return "Link{" +
-                "distance=" + distance +
-                ", cores=" + cores.size() +
-                ", from=" + from +
-                ", to=" + to +
+//                "distance=" + distance +
+//                ", cores=" + cores.size() +
+//                ", from=" + from +
+//                ", to=" + to +
+                + from + " -> " + to +
                 '}';
     }
 }
