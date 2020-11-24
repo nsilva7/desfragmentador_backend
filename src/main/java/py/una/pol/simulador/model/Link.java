@@ -54,7 +54,7 @@ public class Link {
 //                ", cores=" + cores.size() +
 //                ", from=" + from +
 //                ", to=" + to +
-                + from + " -> " + to +
+                + from + " - " + to +
                 '}';
     }
 }

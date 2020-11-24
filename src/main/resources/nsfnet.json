@@ -5,56 +5,56 @@
       "distance": [1100,600,1000]
     },
     {
-      "connections": [0,2,7],
-      "distance": [1100,1600,2800]
+      "connections": [2,7],
+      "distance": [1600,2800]
     },
     {
-      "connections": [0,1,5],
-      "distance": [600,1600,2000]
+      "connections": [5],
+      "distance": [1600,2000]
     },
     {
-      "connections": [0,4,10],
-      "distance": [1000,600,2400]
+      "connections": [4,10],
+      "distance": [600,2400]
     },
     {
-      "connections": [3,5,6],
-      "distance": [600,1100,800]
+      "connections": [5,6],
+      "distance": [1100,800]
     },
     {
-      "connections": [2,4,8,11],
-      "distance": [2000,1100,1200,2000]
+      "connections": [8,11],
+      "distance": [1200,2000]
     },
     {
-      "connections": [4,7],
-      "distance": [800,700]
+      "connections": [7],
+      "distance": [700]
     },
     {
-      "connections": [1,6,9],
-      "distance": [2800,700,700]
+      "connections": [9],
+      "distance": [700]
     },
     {
-      "connections": [5,9],
-      "distance": [1200,900]
+      "connections": [9],
+      "distance": [900]
     },
     {
-      "connections": [7,8,12,13],
-      "distance": [700,900,500,500]
+      "connections": [12,13],
+      "distance": [500,500]
     },
     {
-      "connections": [3,12,13],
-      "distance": [2400,800,1000]
+      "connections": [12,13],
+      "distance": [800,1000]
     },
     {
-      "connections": [5,12,13],
-      "distance": [2000,500,300]
+      "connections": [12,13],
+      "distance": [500,300]
     },
     {
-      "connections": [9,10,11],
-      "distance": [500,800,500]
+      "connections": [],
+      "distance": []
     },
     {
-      "connections": [9,10,11],
-      "distance": [500,1000,300]
+      "connections": [],
+      "distance": []
     }
   ]
 }

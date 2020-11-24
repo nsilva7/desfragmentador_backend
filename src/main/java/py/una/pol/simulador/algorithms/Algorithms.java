@@ -9,21 +9,16 @@ import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.utils.Utils;
 import sun.rmi.runtime.Log;
 
-import java.util.ArrayList;
-
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Algorithms {
     public static EstablisedRoute fa(Graph graph, List<GraphPath> kspaths, Demand demand, int capacity, int core){
-        int begin = 0, end = 0, count;
+        int begin, count;
         boolean  so[] = new boolean[capacity]; //Representa la ocupación del espectro de todos los enlaces.
         List<GraphPath> kspPlaced = new ArrayList<>();
-        ArrayList<Integer> begins = new ArrayList<Integer>();
-        ArrayList<Integer> ends = new ArrayList<Integer>();
-        ArrayList<Integer> kspIndexes = new ArrayList<Integer>();
+        Map<String, Integer> bestKspSlot = new HashMap<>();
         int k = 0;
-        while (k < kspaths.size() && kspaths.get(k) != null){//False libre true ocupado
+        while (k < kspaths.size() && kspaths.get(k) != null){
             Arrays.fill(so, false);//Se inicializa todo el espectro como libre
             GraphPath ksp = kspaths.get(k);
 
@@ -37,27 +32,27 @@ public class Algorithms {
                     }
                 }
             }
-            begin = end = count = 0;
+            begin = count = 0;
+            int j;
             capacity:
             for(int i = 0; i < capacity; i++){
+                count = 0;
                 if(!so[i]){
                     begin = i;
-                    for(int j = begin; j < capacity; j++){
-                        if(!so[i]){
+                    for(j = i; j < capacity; j++){
+                        if(!so[j]){
                             count++;
                         }else{
-                            count = 0;
+                            i = j;
                             break;
                         }
                         if(count == demand.getFs()){
-                            end = k;
-                            ends.add(end);
-                            begins.add(begin);
                             kspPlaced.add(kspaths.get(k));
-                            kspIndexes.add(k);
                             break capacity;
                         }
                     }
+                    if(j == capacity)
+                        break;
                 }
             }
             k++;
@@ -66,9 +61,9 @@ public class Algorithms {
         if(kspPlaced.size() == 0)
             return null;
         //Ksp ubidados ahora se debe elegir el mejor
-        Utils.countCuts(graph, kspPlaced, capacity, core, demand.getFs());
-//        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(path), begins.get(path), demand.getFs(), demand.getTimeLife());
-        EstablisedRoute establisedRoute = null;
+        bestKspSlot = Utils.countCuts(graph, kspPlaced, capacity, core, demand.getFs());
+        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(bestKspSlot.get("ksp")), bestKspSlot.get("slot"), demand.getFs(), demand.getTimeLife());
+        System.out.println("RUTA ESTABLECIDA: " + establisedRoute);
         return establisedRoute;
     }
 

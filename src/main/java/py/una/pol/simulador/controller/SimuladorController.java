@@ -37,9 +37,9 @@ public class SimuladorController {
     @CrossOrigin(origins = "http://localhost:4300")
     @PostMapping("/simular")
     public String simular(@RequestBody Options options) {
-        pruebas();
-        if(1 == 1)
-            return "x";
+//        pruebas();
+//        if(1 == 1)
+//            return "x";
         System.out.println("Opciones: " + options);
         List<Demand> demands;
         Graph net = createTopology2("nsfnet.json", 4, options.getFsWidth(), options.getCapacity());
@@ -50,13 +50,11 @@ public class SimuladorController {
                     net.vertexSet().size(), options.getErlang() / options.getLambda());
 
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
-            System.out.println("Cantidade de demandas: " + demands.size());
+            System.out.println("Cantidad de de demandas: " + demands.size());
             for(Demand demand : demands){
                 System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
-                List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 2);
-                //comprobarKspVocConfia(kspaths);
-//                Algorithms.fa(net, kspaths, demand, options.getCapacity(), 0);
+                List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
                 try {
                     boolean [] tested = new boolean[4];
                     Arrays.fill(tested, false);
@@ -172,7 +170,8 @@ public class SimuladorController {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             //Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
-            Graph<Integer, Link> g = new SimpleDirectedWeightedGraph<>(Link.class);
+//            Graph<Integer, Link> g = new SimpleDirectedWeightedGraph<>(Link.class);
+            Graph<Integer, Link> g = new SimpleWeightedGraph<>(Link.class);
             InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
             JsonNode object = objectMapper.readTree(is);
 
@@ -220,7 +219,6 @@ public class SimuladorController {
             for (JsonNode node: object.get("network")) {
                 for (int i = 0; i < node.get("connections").size(); i++) {
                     int connection = node.get("connections").get(i).intValue();
-                    System.out.println("CONECCTION: " + connection);
                     int distance = node.get("distance").get(i).intValue();
                     List<Core> cores = new ArrayList<>();
 

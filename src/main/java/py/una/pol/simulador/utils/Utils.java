@@ -102,16 +102,17 @@ public class Utils {
 
         int finalPath;
         finalPath = alignmentCalc(ksp, graph, bestKspSlot, core);
+
         return bestKspSlot.get(finalPath);
     }
 
 
     public static int alignmentCalc(List<GraphPath> ksp, Graph graph, ArrayList<Map<String, Integer>> kspSlot, int core) {
         int lessMisalign = -1;
-        int lessMisalignAux = -1;
+        int lessMisalignAux;
         int bestIndex = -1;
         for (Map<String, Integer> k : kspSlot){
-            lessMisalignAux = countMisalignment(ksp.get(k.get("ksp")), graph, core);
+            lessMisalignAux = countMisalignment(ksp.get(k.get("ksp")), graph, core, k.get("slot"));
             if(lessMisalign == -1 || lessMisalignAux < lessMisalign){
                 lessMisalign = lessMisalignAux;
                 bestIndex = k.get("ksp");
@@ -120,64 +121,26 @@ public class Utils {
         return bestIndex;
     }
 
-    public static int countMisalignment(GraphPath ksp, Graph graph, int core) {
-        System.out.println("countMisalignment");
+    public static int countMisalignment(GraphPath ksp, Graph graph, int core, int slot) {
+        System.out.println("Calculo de Desalineación");
         System.out.println(ksp);
-        System.out.println("LOS VECINOS DE " + ksp.getStartVertex() + " -> " + ksp.getEndVertex() + " SON:");
-        for (Object vertex : ksp.getVertexList()){
-            for (Object neighbour : graph.outgoingEdgesOf(vertex)){
-                System.out.println(neighbour);
-                System.out.println(ksp.getEdgeList().contains(neighbour));
-                if(!ksp.getEdgeList().contains(neighbour)){//Verificamos que el vecino no este en el camino
-                    System.out.println("ES VECINO");
+        int missalign = 0;
+        for (Object link : ksp.getEdgeList() ){//Por cada enlace
+            for (Object fromNeighbour : graph.outgoingEdgesOf(((Link)link).getFrom())){//Vecinos por el nodo origen
+                if(!ksp.getEdgeList().contains(fromNeighbour)){//Verificamos que el vecino no este en el camino
+                    if(((Link)fromNeighbour).getCores().get(core).getFs().get(slot).isFree())//Si el slot elegido esta ocupado ocurre desalineación
+                        missalign++;
                 }
-                System.out.println("");
+            }
+            for (Object toNeighbour : graph.outgoingEdgesOf(((Link)link).getTo())){//Vecinos por el nodo destino
+                if(!ksp.getEdgeList().contains(toNeighbour)){//Verificamos que el vecino no este en el camino
+                    if(((Link)toNeighbour).getCores().get(core).getFs().get(slot).isFree())//Si el slot elegido esta ocupado ocurre desalineación
+                        missalign++;
+                }
             }
         }
-
-        return 0;
-    }
-
-    public static int countMisalignment2(GraphPath ksp, Graph graph, int core) {
-        int alignAux = 0;
-        int actualLink = -1;
-        int nextNextLink = -1;
-        int nextLink, iLink, prevLink = -1;
-        int nSgteSgte = -1;
-        for(int k = 0; k < ksp.getLength() - 2; k++){
-            for (int i = 0; i < graph.vertexSet().size(); i++) {
-                actualLink = k;
-                nextLink = k+1;
-                iLink = i;
-                try {
-                    if (ksp.getEdgeList().get(k+2) != null) {
-                        nextNextLink = k+2;
-                    }
-                } catch (Exception e) {
-                    System.out.println("Error No le salio sgte de sgte");
-                    e.printStackTrace();
-                }
-//                if (((Link)ksp.getEdgeList().get(actualLink)) != null && iLink != nextLink && iLink != actualLink && iLink != prevLink) {
-//                    if (((Link)ksp.getEdgeList().get(actualLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
-//                        alignAux = alignAux + 1;
-//                    } else {
-//                        alignAux = alignAux - 1;
-//                    }
-//
-//                }
-//                if (((Link)ksp.getEdgeList().get(nextLink) != null && iLink != actualLink && iLink != nextLink && iLink != prevLink && iLink != nextNextLink)) {
-//                    if (((Link)ksp.getEdgeList().get(nextLink)).getCores().get(core).getFs().get(fSlots).isFree()) {
-//                        alignAux = alignAux + 1;
-//                    } else {
-//                        alignAux = alignAux - 1;
-//                    }
-//
-//                }
-            }
-            prevLink = actualLink;
-
-        }
-        return alignAux;
+        System.out.println("DESALINEACIÓN: " + missalign);
+        return missalign;
     }
 
     public static Map numCuts(GraphPath  ksp, Graph graph, int capacity, int core, int fs) {
@@ -187,7 +150,7 @@ public class Utils {
 
         ArrayList<Integer> cIndexes;
         int cutAux = 0;
-        cIndexes = searchIndexes(ksp, graph, capacity, core, fs);
+        cIndexes = searchIndexes(ksp, graph, capacity, core, fs, true);
 
         for (int slotIndex : cIndexes) {
             if (slotIndex != 0){
@@ -214,12 +177,13 @@ public class Utils {
     }
 
 
-    public static ArrayList<Integer> searchIndexes(GraphPath ksp, Graph graph, int capacity, int core, int fsQ){
+    public static ArrayList<Integer> searchIndexes(GraphPath ksp, Graph graph, int capacity, int core, int fsQ, boolean checkFs){
         ArrayList<Integer> indexes = new ArrayList<Integer>();
 
         ArrayList<Integer> cIndexes = new ArrayList<Integer>();
-        boolean free = false;
-
+        boolean free;
+        boolean canBeCandidate = true;//Inicialmente el primer slot puede ser candidato
+        int slots = 0;
         for (int i = 0; i < capacity; i++) {
             free = true;
             for (Object path: ksp.getEdgeList()){
@@ -227,22 +191,20 @@ public class Utils {
                 FrecuencySlot fs = link.getCores().get(core).getFs().get(i);
                 if(!fs.isFree()){//Se verifica que todo el camino este libre en el slot i
                     free = false;
+                    canBeCandidate = true;//Cuando encuentra un slot ocupado entonces el siguiente puede ser candidato
+                    slots = 0;
                     break;
                 }
             }
-            if (free)
-                indexes.add(i);
-        }
-
-        //Se quitan indices de slots contiguos
-        for (int i = indexes.size() - 1; i > 0; i--) {
-            if ((indexes.get(i) - indexes.get(i - 1)) != 1) {
-                cIndexes.add(indexes.get(i));
+            if(free)//Si esta libre se aumenta el contador
+                slots++;
+            if (slots == fsQ && canBeCandidate){//Si puede contener la cantidad de fs y es candidadto valido entonces se agrega
+                indexes.add(i - fsQ + 1);
+                slots = 0;
+                canBeCandidate = false;
             }
         }
-        cIndexes.add(indexes.get(0));
-        System.out.println("cIndexes: " + cIndexes);
-        return cIndexes;
+        return indexes;
     }
 
     public static void assignFs(EstablisedRoute establisedRoute, int core){
