@@ -10,6 +10,8 @@ public class EstablisedRoute {
     private int fsIndexBegin;
     private int fs;
     private int timeLife;
+    private int from;
+    private int to;
     private List<Link> path;
 
     public int getTimeLife() {
@@ -20,11 +22,29 @@ public class EstablisedRoute {
         this.timeLife = timeLife;
     }
 
-    public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife) {
+    public int getFrom() {
+        return from;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
+
+    public int getTo() {
+        return to;
+    }
+
+    public void setTo(int to) {
+        this.to = to;
+    }
+
+    public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife, int from, int to) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fs = fs;
         this.timeLife = timeLife;
+        this.from = from;
+        this.to = to;
     }
 
     public List getPath() {
@@ -58,6 +78,8 @@ public class EstablisedRoute {
                 ", fsIndexBegin=" + fsIndexBegin +
                 ", fs=" + fs +
                 ", tl=" + timeLife +
+                ", from=" + from +
+                ", to=" + to +
                 '}';
     }
 }

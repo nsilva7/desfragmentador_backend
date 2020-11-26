@@ -73,10 +73,6 @@ public class Utils {
         return resultado;
     }
 
-    public static void ksp(Graph g, int source, int destination, int k){
-
-    }
-
     public static Map countCuts(Graph graph, List<GraphPath> ksp, int capacity, int core, int fs){
         Map<String, Integer> slotCuts = new HashMap<>();
         ArrayList<Map<String, Integer>> bestKspSlot = new ArrayList<>();
@@ -95,14 +91,11 @@ public class Utils {
                 bestKspSlot.add(slotCuts);
             }
         }
-//        System.out.println("Best Ksp Slot");
-        System.out.println(bestKspSlot);
 //        if (slotCuts.size() == 1) //Solo un resultado
 //            return bestKspSlot.get(0);
 
         int finalPath;
         finalPath = alignmentCalc(ksp, graph, bestKspSlot, core);
-
         return bestKspSlot.get(finalPath);
     }
 
@@ -110,20 +103,21 @@ public class Utils {
     public static int alignmentCalc(List<GraphPath> ksp, Graph graph, ArrayList<Map<String, Integer>> kspSlot, int core) {
         int lessMisalign = -1;
         int lessMisalignAux;
-        int bestIndex = -1;
+        int bestIndex = 0;
+        int c = 0;
         for (Map<String, Integer> k : kspSlot){
             lessMisalignAux = countMisalignment(ksp.get(k.get("ksp")), graph, core, k.get("slot"));
             if(lessMisalign == -1 || lessMisalignAux < lessMisalign){
                 lessMisalign = lessMisalignAux;
-                bestIndex = k.get("ksp");
+//                bestIndex = k.get("ksp");
+                bestIndex = c;//Tengo que guardar el indice en kspSlot, no el indice en ksp
             }
+            c++;
         }
         return bestIndex;
     }
 
     public static int countMisalignment(GraphPath ksp, Graph graph, int core, int slot) {
-//        System.out.println("Calculo de Desalineación");
-//        System.out.println(ksp);
         int missalign = 0;
         for (Object link : ksp.getEdgeList() ){//Por cada enlace
             for (Object fromNeighbour : graph.outgoingEdgesOf(((Link)link).getFrom())){//Vecinos por el nodo origen

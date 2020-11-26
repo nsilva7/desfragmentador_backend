@@ -44,13 +44,6 @@ public class SimuladorController {
         this.template = template;
     }
 
-//    @MessageMapping("/simular")
-    public void sendMessage(@RequestBody Options options){
-        System.out.println("Opciones: " + options);
-        this.template.convertAndSend("/message",  "back to front 1 ");
-
-        this.template.convertAndSend("/message",  "back to front 2 ");
-    }
 
 //    @CrossOrigin(origins = "http://localhost:4300")
 //    @PostMapping("/simular")
@@ -107,7 +100,7 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
                 }catch (java.lang.Exception e){
 
                 }
