@@ -2,11 +2,15 @@ package py.una.pol.simulador.model;
 
 import org.jgrapht.GraphPath;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class EstablisedRoute {
-    private GraphPath path;
+//    private GraphPath path;
     private int fsIndexBegin;
     private int fs;
     private int timeLife;
+    private List<Link> path;
 
     public int getTimeLife() {
         return timeLife;
@@ -16,18 +20,18 @@ public class EstablisedRoute {
         this.timeLife = timeLife;
     }
 
-    public EstablisedRoute(GraphPath path, int fsIndexBegin, int fs, int timeLife) {
+    public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fs = fs;
         this.timeLife = timeLife;
     }
 
-    public GraphPath getPath() {
+    public List getPath() {
         return path;
     }
 
-    public void setPath(GraphPath path) {
+    public void setPath(ArrayList path) {
         this.path = path;
     }
 

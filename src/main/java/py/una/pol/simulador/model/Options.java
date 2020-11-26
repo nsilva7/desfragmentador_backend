@@ -9,6 +9,16 @@ public class Options {
     private int lambda;
     private int fsRangeMin;
     private int fsRangeMax;
+    private int cores;
+
+    public int getCores() {
+        return cores;
+    }
+
+    public void setCores(int cores) {
+        this.cores = cores;
+    }
+
     private String routingAlg;
 
     public int getTime() {
@@ -94,6 +104,7 @@ public class Options {
                 ", lambda=" + lambda +
                 ", fsRangeMin=" + fsRangeMin +
                 ", fsRangeMax=" + fsRangeMax +
+                ", cores=" + cores +
                 ", routingAlg='" + routingAlg + '\'' +
                 '}';
     }

@@ -82,10 +82,10 @@ public class Utils {
         ArrayList<Map<String, Integer>> bestKspSlot = new ArrayList<>();
 
         for (int k = 0; k < ksp.size(); k++) {
-            System.out.println("----------------------------------");
-            System.out.println(ksp.get(k));
+//            System.out.println("----------------------------------");
+//            System.out.println(ksp.get(k));
             slotCuts = numCuts(ksp.get(k), graph, capacity, core, fs);
-            System.out.println("Mejor slot: " + slotCuts.get("slot") + " con " + slotCuts.get("cuts") + " cuts");
+//            System.out.println("Mejor slot: " + slotCuts.get("slot") + " con " + slotCuts.get("cuts") + " cuts");
             if(bestKspSlot.size() == 0 || slotCuts.get("cuts") < bestKspSlot.get(0).get("cuts")){ //Primera vez o si encuentra encuentra un resultado mejor (menos cuts)
                 bestKspSlot.clear();//Limpiamos el array porque pueden haber más de un resultado guardado
                 slotCuts.put("ksp", k);//Guardamos el indice del mejor ksp
@@ -95,7 +95,7 @@ public class Utils {
                 bestKspSlot.add(slotCuts);
             }
         }
-        System.out.println("Best Ksp Slot");
+//        System.out.println("Best Ksp Slot");
         System.out.println(bestKspSlot);
 //        if (slotCuts.size() == 1) //Solo un resultado
 //            return bestKspSlot.get(0);
@@ -122,8 +122,8 @@ public class Utils {
     }
 
     public static int countMisalignment(GraphPath ksp, Graph graph, int core, int slot) {
-        System.out.println("Calculo de Desalineación");
-        System.out.println(ksp);
+//        System.out.println("Calculo de Desalineación");
+//        System.out.println(ksp);
         int missalign = 0;
         for (Object link : ksp.getEdgeList() ){//Por cada enlace
             for (Object fromNeighbour : graph.outgoingEdgesOf(((Link)link).getFrom())){//Vecinos por el nodo origen
@@ -139,7 +139,7 @@ public class Utils {
                 }
             }
         }
-        System.out.println("DESALINEACIÓN: " + missalign);
+//        System.out.println("DESALINEACIÓN: " + missalign);
         return missalign;
     }
 
@@ -160,7 +160,7 @@ public class Utils {
                     }
                 }
             }
-            System.out.println("Para el cIndex: " + slotIndex + ", cuts = " + cutAux);
+//            System.out.println("Para el cIndex: " + slotIndex + ", cuts = " + cutAux);
             if (cuts == -1 || cutAux < cuts) {
                 cuts = cutAux;
                 slot = slotIndex;
@@ -209,23 +209,23 @@ public class Utils {
 
     public static void assignFs(EstablisedRoute establisedRoute, int core){
         System.out.println("assignFs()");
-        for (Object link: establisedRoute.getPath().getEdgeList()){
+        for (Object link: establisedRoute.getPath()){
             for (int i = establisedRoute.getFsIndexBegin(); i < establisedRoute.getFs(); i++){
                 ((Link) link).getCores().get(core).getFs().get(i).setFree(false);
                 ((Link) link).getCores().get(core).getFs().get(i).setLifetime(establisedRoute.getTimeLife());
             }
         }
-        for (Object link: establisedRoute.getPath().getEdgeList()){
-            System.out.println("ESPECTRO DEL ENLACE: " + ((Link)link).getFrom() + " -> " + ((Link)link).getTo());
-            System.out.print("|");
-            for(int i = 0; i < 16; i++){
-                if(!((Link) link).getCores().get(core).getFs().get(i).isFree())
-                    System.out.print(" x |");
-                else
-                    System.out.print("  |");
-            }
-            System.out.println("");
-        }
-        System.out.println("");
+//        for (Object link: establisedRoute.getPath()){
+//            System.out.println("ESPECTRO DEL ENLACE: " + ((Link)link).getFrom() + " -> " + ((Link)link).getTo());
+//            System.out.print("|");
+//            for(int i = 0; i < 12; i++){
+//                if(!((Link) link).getCores().get(core).getFs().get(i).isFree())
+//                    System.out.print(" x |");
+//                else
+//                    System.out.print("  |");
+//            }
+//            System.out.println("");
+//        }
+//        System.out.println("");
     }
 }

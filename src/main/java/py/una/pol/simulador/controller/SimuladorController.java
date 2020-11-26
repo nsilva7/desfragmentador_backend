@@ -12,6 +12,9 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +24,7 @@ import py.una.pol.simulador.model.*;
 import py.una.pol.simulador.utils.ResourceReader;
 import py.una.pol.simulador.utils.Utils;
 import py.una.pol.simulador.algorithms.Algorithms;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import javax.rmi.CORBA.Util;
 import java.io.IOException;
@@ -33,16 +37,32 @@ import java.lang.reflect.Type;
 
 @RestController
 public class SimuladorController {
+    private final SimpMessagingTemplate template;
 
-    @CrossOrigin(origins = "http://localhost:4300")
-    @PostMapping("/simular")
-    public String simular(@RequestBody Options options) {
+    @Autowired
+    SimuladorController(SimpMessagingTemplate template){
+        this.template = template;
+    }
+
+//    @MessageMapping("/simular")
+    public void sendMessage(@RequestBody Options options){
+        System.out.println("Opciones: " + options);
+        this.template.convertAndSend("/message",  "back to front 1 ");
+
+        this.template.convertAndSend("/message",  "back to front 2 ");
+    }
+
+//    @CrossOrigin(origins = "http://localhost:4300")
+//    @PostMapping("/simular")
+    @MessageMapping("/simular")
+    public void simular(@RequestBody Options options) {
 //        pruebas();
 //        if(1 == 1)
 //            return "x";
         System.out.println("Opciones: " + options);
         List<Demand> demands;
-        Graph net = createTopology2("nsfnet.json", 4, options.getFsWidth(), options.getCapacity());
+        Object result;
+        Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         for (int i = 0; i < options.getTime(); i++) {
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
@@ -60,36 +80,40 @@ public class SimuladorController {
                     Arrays.fill(tested, false);
                     int core;
                     while (true){
-                        //core = getCore(3, tested);
-                        core = 0;
+                        core = getCore(options.getCores(), tested);
+                        //core = 0;
                         System.out.println("CORE: " + core);
                         Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
                         Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
                         Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
-                        System.out.println("----RUTA ESTABLECIDA----");
-                        System.out.println((EstablisedRoute)establisedRoute);
+//                        System.out.println("----RUTA ESTABLECIDA----");
+//                        System.out.println(establisedRoute);
                         if(establisedRoute == null){
                             tested[core] = true;//Se marca el core probado
                             System.out.println("BLOQUEO");
+                            this.template.convertAndSend("/message",  establisedRoute);
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 break;
                             }
-                            break;
                         }else{
                             //Ruta establecida
                             Utils.assignFs((EstablisedRoute)establisedRoute, core);
+                            this.template.convertAndSend("/message",  establisedRoute);
                             break;
                         }
                     }
                 }catch (java.lang.Exception e){
                     e.printStackTrace();
                 }
+                try {
+                    Thread.sleep(1000);
+                }catch (java.lang.Exception e){
 
+                }
             }
         }
 
-        return "SUCCESS";
     }
 
 

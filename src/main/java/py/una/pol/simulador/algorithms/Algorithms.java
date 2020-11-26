@@ -62,8 +62,9 @@ public class Algorithms {
             return null;
         //Ksp ubidados ahora se debe elegir el mejor
         bestKspSlot = Utils.countCuts(graph, kspPlaced, capacity, core, demand.getFs());
-        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(bestKspSlot.get("ksp")), bestKspSlot.get("slot"), demand.getFs(), demand.getTimeLife());
-        System.out.println("RUTA ESTABLECIDA: " + establisedRoute);
+        System.out.println("INDEX: " + bestKspSlot);
+        EstablisedRoute establisedRoute = new EstablisedRoute((kspPlaced.get(bestKspSlot.get("ksp")).getEdgeList()), bestKspSlot.get("slot"), demand.getFs(), demand.getTimeLife());
+//        System.out.println("RUTA ESTABLECIDA: " + establisedRoute);
         return establisedRoute;
     }
 
