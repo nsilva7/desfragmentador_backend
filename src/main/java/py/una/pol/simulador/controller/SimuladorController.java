@@ -106,7 +106,9 @@ public class SimuladorController {
                 }
             }
         }
-
+        Map<String, Boolean> map = new LinkedHashMap<>();
+        map.put("end", true);
+        this.template.convertAndSend("/message",  map);
     }
 
 
