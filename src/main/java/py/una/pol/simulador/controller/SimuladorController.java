@@ -65,7 +65,7 @@ public class SimuladorController {
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
             System.out.println("Cantidad de de demandas: " + demands.size());
             for(Demand demand : demands){
-                System.out.println("DEMANDA: " + demand);
+                ///System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
                 try {
@@ -74,8 +74,6 @@ public class SimuladorController {
                     int core;
                     while (true){
                         core = getCore(options.getCores(), tested);
-                        //core = 0;
-                        System.out.println("CORE: " + core);
                         Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
                         Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
                         Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
@@ -100,7 +98,7 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(2000);
+                    Thread.sleep(1000/demands.size());
                 }catch (java.lang.Exception e){
 
                 }

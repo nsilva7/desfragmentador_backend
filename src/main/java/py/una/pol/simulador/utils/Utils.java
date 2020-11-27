@@ -204,11 +204,12 @@ public class Utils {
     public static void assignFs(EstablisedRoute establisedRoute, int core){
         System.out.println("assignFs()");
         for (Object link: establisedRoute.getPath()){
-            for (int i = establisedRoute.getFsIndexBegin(); i < establisedRoute.getFs(); i++){
+            for (int i = establisedRoute.getFsIndexBegin(); i < establisedRoute.getFsIndexBegin() + establisedRoute.getFs(); i++){
                 ((Link) link).getCores().get(core).getFs().get(i).setFree(false);
                 ((Link) link).getCores().get(core).getFs().get(i).setLifetime(establisedRoute.getTimeLife());
             }
         }
+        System.out.println("assignFs()");
 //        for (Object link: establisedRoute.getPath()){
 //            System.out.println("ESPECTRO DEL ENLACE: " + ((Link)link).getFrom() + " -> " + ((Link)link).getTo());
 //            System.out.print("|");
