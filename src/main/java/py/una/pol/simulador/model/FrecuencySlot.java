@@ -35,6 +35,18 @@ public class FrecuencySlot {
         this.fsWidh = fsWidh;
     }
 
+    public boolean subLifetime(){
+        if (this.free)
+            return false;
+        this.lifetime--;
+        if(this.lifetime == 0){
+            this.free = true;
+            return true;
+        }
+
+        return false;
+    }
+
     @Override
     public String toString() {
         return "FrecuencySlot{" +

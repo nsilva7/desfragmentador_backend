@@ -5,12 +5,22 @@ public class Demand {
     private int destination;
     private int fs;
     private int timeLife;
+    private boolean blocked;
 
     public Demand(int source, int destination, int fs, int timeLife) {
         this.source = source;
         this.destination = destination;
         this.fs = fs;
         this.timeLife = timeLife;
+        this.blocked = false;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
     }
 
     public int getSource() {

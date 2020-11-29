@@ -34,11 +34,12 @@ import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.lang.reflect.Type;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 public class SimuladorController {
     private final SimpMessagingTemplate template;
-
+    private static Object LOCK = new Object();
     @Autowired
     SimuladorController(SimpMessagingTemplate template){
         this.template = template;
@@ -54,7 +55,7 @@ public class SimuladorController {
 //            return "x";
         System.out.println("Opciones: " + options);
         List<Demand> demands;
-        Object result;
+        int wait;
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         for (int i = 0; i < options.getTime(); i++) {
             demands = Utils.generateDemands(
@@ -81,10 +82,13 @@ public class SimuladorController {
 //                        System.out.println(establisedRoute);
                         if(establisedRoute == null){
                             tested[core] = true;//Se marca el core probado
-                            System.out.println("BLOQUEO");
-                            this.template.convertAndSend("/message",  establisedRoute);
+                            System.out.println("POSIBLE BLOQUEO");
+//                            System.out.println(Arrays.asList(tested).contains(false));
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
+                                System.out.println("BLOQUEO");
+                                demand.setBlocked(true);
+                                this.template.convertAndSend("/message",  demand);
                                 break;
                             }
                         }else{
@@ -98,17 +102,40 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(1000/demands.size());
+                    wait = 1000/demands.size();
+                    TimeUnit.MILLISECONDS.sleep(wait);
+//                    Object.wait (wait);
                 }catch (java.lang.Exception e){
-
+                    e.printStackTrace();
                 }
             }
+            this.setTimeLife(net);
         }
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         this.template.convertAndSend("/message",  map);
     }
 
+    private void setTimeLife(Graph net){
+        Map<String, String> releasedSlots = new LinkedHashMap<>();
+        boolean released;
+        FrecuencySlot slot;
+        for(Object link : net.edgeSet()){
+            for(int core = 0; core < ((Link) link).getCores().size(); core++){
+                for(int fs = 0; fs < ((Link) link).getCores().get(core).getFs().size(); fs++){
+                    slot = ((Link)link).getCores().get(core).getFs().get(fs);
+                    released = slot.subLifetime();
+                    if(released){
+                        releasedSlots.put("released", "true");
+                        releasedSlots.put("link", "l"  + ((Link) link).getFrom() + ((Link) link).getTo());
+                        releasedSlots.put("core", Integer.toString(core));
+                        releasedSlots.put("slot", Integer.toString(fs));
+                        this.template.convertAndSend("/message",  releasedSlots);
+                    }
+                }
+            }
+        }
+    }
 
     @GetMapping("/getTopology")
     public String getTopología() {
