@@ -38,6 +38,9 @@ public class EstablisedRoute {
         this.to = to;
     }
 
+    public EstablisedRoute() {
+    }
+
     public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife, int from, int to) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
@@ -51,7 +54,7 @@ public class EstablisedRoute {
         return path;
     }
 
-    public void setPath(ArrayList path) {
+    public void setPath(List path) {
         this.path = path;
     }
 

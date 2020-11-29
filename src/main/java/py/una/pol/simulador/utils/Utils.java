@@ -137,6 +137,43 @@ public class Utils {
         return missalign;
     }
 
+    public static int countNeighbour(GraphPath ksp, Graph graph) {
+        List neighbours = new ArrayList();
+        for (Object link : ksp.getEdgeList() ){
+            for (Object fromNeighbour : graph.outgoingEdgesOf(((Link)link).getFrom())){
+                if(!ksp.getEdgeList().contains(fromNeighbour) && !neighbours.contains(fromNeighbour)){
+                    neighbours.add(fromNeighbour);
+                }
+            }
+            for (Object toNeighbour : graph.outgoingEdgesOf(((Link)link).getTo())){
+                if(!ksp.getEdgeList().contains(toNeighbour) && !neighbours.contains(toNeighbour)){
+
+                    neighbours.add(toNeighbour);
+                }
+            }
+        }
+        System.out.println("Vecinos: "+ neighbours);
+        return neighbours.size();
+    }
+
+
+    public static int countFreeCapacity(GraphPath ksp, Graph graph,int core, int capacity) {
+
+        int frees = 0;
+        for (int i = 0; i < capacity; i++) {
+            for (Object path: ksp.getEdgeList()){
+                Link link = (Link) path;
+                FrecuencySlot fs = link.getCores().get(core).getFs().get(i);
+                if(fs.isFree()){
+                    frees++;
+                }
+            }
+        }
+
+        return frees;
+    }
+
+
     public static Map numCuts(GraphPath  ksp, Graph graph, int capacity, int core, int fs) {
         int cuts = -1;
         int slot = -1;

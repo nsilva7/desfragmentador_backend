@@ -112,7 +112,9 @@ public class SimuladorController {
 
     @GetMapping("/getTopology")
     public String getTopología() {
-        Graph g = createTopology2("nsfnet.json",4,12.5,350);
+        pruebas();
+        return "x";
+       /* Graph g = createTopology2("nsfnet.json",4,12.5,350);
         KShortestSimplePaths ksp = new KShortestSimplePaths(g);
 
             //k caminos más cortos entre source y destination de la demanda actual
@@ -127,7 +129,7 @@ public class SimuladorController {
         });
         Writer writer = new StringWriter();
         exporter.exportGraph(g, writer);
-        return writer.toString();
+        return writer.toString();*/
     }
 
     private int getCore(int limit, boolean [] tested){
@@ -275,10 +277,11 @@ public class SimuladorController {
     private void pruebas(){
         Graph net = createTopologyWithFs("Networks.json");
         estadoDeFs(net);
-        Demand demand = new Demand(0,4,1,5);
+        Demand demand = new Demand(0,5,2,5);
         KShortestSimplePaths ksp = new KShortestSimplePaths(net);
+
         List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 4);
-        Algorithms.fa(net, kspaths, demand, 12, 0);
+        Algorithms.mtlsc(net, kspaths, demand, 12, 0);
 //                try {
 //                    boolean [] tested = new boolean[4];
 //                    Arrays.fill(tested, false);
