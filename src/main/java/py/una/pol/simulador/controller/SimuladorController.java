@@ -50,9 +50,14 @@ public class SimuladorController {
 //    @PostMapping("/simular")
     @MessageMapping("/simular")
     public void simular(@RequestBody Options options) {
+//        boolean [] testedx = new boolean[4];
+//        Arrays.fill(testedx, false);
+//        for (int k = 1; k < 60; k++){
+//            this.getCore(4, testedx);
+//        }
 //        pruebas();
 //        if(1 == 1)
-//            return "x";
+//            return ;
         System.out.println("Opciones: " + options);
         List<Demand> demands;
         int wait;
@@ -109,15 +114,20 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
             }
-            this.setTimeLife(net);
+            ReleasedSlots rSlots = new ReleasedSlots();
+            rSlots.setTime(i + 2);
+            rSlots.setReleased(true);
+            rSlots.setReleasedSlots(this.setTimeLife(net));
+            this.template.convertAndSend("/message", rSlots);
         }
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         this.template.convertAndSend("/message",  map);
     }
 
-    private void setTimeLife(Graph net){
-        Map<String, String> releasedSlots = new LinkedHashMap<>();
+    private ArrayList<Map<String, String>> setTimeLife(Graph net){
+        Map<String, String> releasedSlot = new LinkedHashMap<>();
+        ArrayList<Map<String, String>> releasedSlots = new ArrayList<>();
         boolean released;
         FrecuencySlot slot;
         for(Object link : net.edgeSet()){
@@ -126,21 +136,21 @@ public class SimuladorController {
                     slot = ((Link)link).getCores().get(core).getFs().get(fs);
                     released = slot.subLifetime();
                     if(released){
-                        releasedSlots.put("released", "true");
-                        releasedSlots.put("link", "l"  + ((Link) link).getFrom() + ((Link) link).getTo());
-                        releasedSlots.put("core", Integer.toString(core));
-                        releasedSlots.put("slot", Integer.toString(fs));
-                        this.template.convertAndSend("/message",  releasedSlots);
+                        releasedSlot.put("released", "true");
+                        releasedSlot.put("link", "l"  + ((Link) link).getFrom() + ((Link) link).getTo());
+                        releasedSlot.put("core", Integer.toString(core));
+                        releasedSlot.put("slot", Integer.toString(fs));
+                        releasedSlots.add(releasedSlot);
+//                        this.template.convertAndSend("/message",  releasedSlot);
                     }
                 }
             }
         }
+        return releasedSlots;
     }
 
     @GetMapping("/getTopology")
     public String getTopología() {
-        pruebas();
-        return "x";
        /* Graph g = createTopology2("nsfnet.json",4,12.5,350);
         KShortestSimplePaths ksp = new KShortestSimplePaths(g);
 
@@ -157,6 +167,7 @@ public class SimuladorController {
         Writer writer = new StringWriter();
         exporter.exportGraph(g, writer);
         return writer.toString();*/
+       return "x";
     }
 
     private int getCore(int limit, boolean [] tested){
@@ -299,49 +310,6 @@ public class SimuladorController {
                 System.out.println(path);
             }
         }
-    }
-
-    private void pruebas(){
-        Graph net = createTopologyWithFs("Networks.json");
-        estadoDeFs(net);
-        Demand demand = new Demand(0,5,2,5);
-        KShortestSimplePaths ksp = new KShortestSimplePaths(net);
-
-        List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 4);
-        Algorithms.mtlsc(net, kspaths, demand, 12, 0);
-//                try {
-//                    boolean [] tested = new boolean[4];
-//                    Arrays.fill(tested, false);
-//                    int core;
-//                    while (true){
-//                        //core = getCore(3, tested);
-//                        core = 0;
-//                        System.out.println("CORE: " + core);
-//                        Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
-//                        Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
-//                        Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
-//                        System.out.println("----RUTA ESTABLECIDA----");
-//                        System.out.println((EstablisedRoute)establisedRoute);
-//                        if(establisedRoute == null){
-//                            tested[core] = true;//Se marca el core probado
-//                            System.out.println("BLOQUEO");
-//                            if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
-//                                //Bloqueo
-//                                break;
-//                            }
-//                            break;
-//                        }else{
-//                            //Ruta establecida
-//                            Utils.assignFs((EstablisedRoute)establisedRoute, core);
-//                            break;
-//                        }
-//                    }
-//                }catch (java.lang.Exception e){
-//                    e.printStackTrace();
-//                }
-
-
-
     }
 
     private void estadoDeFs(Graph net){

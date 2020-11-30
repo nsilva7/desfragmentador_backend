@@ -63,7 +63,7 @@ public class Algorithms {
             return null;
         //Ksp ubidados ahora se debe elegir el mejor
         bestKspSlot = Utils.countCuts(graph, kspPlaced, capacity, core, demand.getFs());
-        EstablisedRoute establisedRoute = new EstablisedRoute((kspPlaced.get(bestKspSlot.get("ksp")).getEdgeList()), bestKspSlot.get("slot"), demand.getFs(), demand.getTimeLife(), demand.getSource(), demand.getDestination());
+        EstablisedRoute establisedRoute = new EstablisedRoute((kspPlaced.get(bestKspSlot.get("ksp")).getEdgeList()), bestKspSlot.get("slot"), demand.getFs(), demand.getTimeLife(), demand.getSource(), demand.getDestination(), core);
         return establisedRoute;
     }
 
@@ -146,7 +146,7 @@ public class Algorithms {
             return null;
         }
 
-        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(selectedPath).getEdgeList(), slot, demand.getFs(), demand.getTimeLife(),demand.getSource(),demand.getDestination());
+        EstablisedRoute establisedRoute = new EstablisedRoute(kspPlaced.get(selectedPath).getEdgeList(), slot, demand.getFs(), demand.getTimeLife(),demand.getSource(),demand.getDestination(), core);
         System.out.println("RUTA ESTABLECIDA: " + establisedRoute);
         return establisedRoute;
 
@@ -249,6 +249,7 @@ public class Algorithms {
             establisedRoute.setTimeLife(demand.getTimeLife());
             establisedRoute.setFrom(demand.getSource());
             establisedRoute.setTo(demand.getDestination());
+            establisedRoute.setCore(core);
             System.out.println("RUTA ESTABLECIDA: " + establisedRoute);
             return establisedRoute;
         }

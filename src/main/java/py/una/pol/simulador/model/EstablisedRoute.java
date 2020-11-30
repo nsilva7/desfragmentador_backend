@@ -13,6 +13,7 @@ public class EstablisedRoute {
     private int from;
     private int to;
     private List<Link> path;
+    private int core;
 
     public int getTimeLife() {
         return timeLife;
@@ -41,13 +42,22 @@ public class EstablisedRoute {
     public EstablisedRoute() {
     }
 
-    public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife, int from, int to) {
+    public EstablisedRoute(List path, int fsIndexBegin, int fs, int timeLife, int from, int to, int core) {
         this.path = path;
         this.fsIndexBegin = fsIndexBegin;
         this.fs = fs;
         this.timeLife = timeLife;
         this.from = from;
         this.to = to;
+        this.core = core;
+    }
+
+    public int getCore() {
+        return core;
+    }
+
+    public void setCore(int core) {
+        this.core = core;
     }
 
     public List getPath() {
