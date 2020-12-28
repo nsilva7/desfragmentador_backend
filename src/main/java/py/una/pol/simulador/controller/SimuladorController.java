@@ -60,6 +60,7 @@ public class SimuladorController {
 //            return ;
         System.out.println("Opciones: " + options);
         List<Demand> demands;
+        List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         for (int i = 0; i < options.getTime(); i++) {
@@ -98,6 +99,7 @@ public class SimuladorController {
                             }
                         }else{
                             //Ruta establecida
+                            establishedRoutes.add((EstablisedRoute) establisedRoute);
                             Utils.assignFs((EstablisedRoute)establisedRoute, core);
                             this.template.convertAndSend("/message",  establisedRoute);
                             break;

@@ -257,4 +257,102 @@ public class Algorithms {
         return null;
 
     }
+
+    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric,int FSminPC) {
+        double[] probabilities = new double[establishedRoutes.size()];
+        double[] pheromones = new double[establishedRoutes.size()];
+        double[] visibility = new double[establishedRoutes.size()];
+
+        for (int i = 0; i < establishedRoutes.size(); i++) {
+            pheromones[i] = 1;
+            visibility[i] = visibilityCalc(establishedRoutes.get(i),metric,FSminPC);
+        }
+
+        double summ;
+        for (int i = 0; i < antsq; i++) {
+            summ = 0;
+            for (int j = 0; j < pheromones.length ; j++) {
+                summ += pheromones[j]*visibility[j];
+            }
+
+            for (int j = 0; j < probabilities.length; j++) {
+                probabilities[j] = pheromones[j]*visibility[j]/summ;
+            }
+
+
+        }
+        return false;
+    }
+
+    public static double visibilityCalc(EstablisedRoute establishedRoute, String metric, int FSminPC) {
+        switch (metric) {
+            case "ENTROPIA":
+                return routeEntropy(establishedRoute);
+        }
+
+        return -1;
+    }
+
+    public static double routeEntropy(EstablisedRoute establishedRoute) {
+        List<FrecuencySlot> fs;
+        double uelink=0;
+
+        for (Link link: establishedRoute.getPath()) {
+            fs = link.getCores().get(establishedRoute.getCore()).getFs();
+            int ueCount = 0;
+            for (int i = 0; i < fs.size() - 1 ; i++) {
+                if(fs.get(i).isFree() != fs.get(i+1).isFree()){
+                    ueCount++;
+                }
+            }
+
+            uelink += ueCount;
+        }
+
+        return uelink/establishedRoute.getPath().size();
+    }
+
+    public static int selectRoute(double[] probabilities, ArrayList usedIndexes) {
+        int[] indexOrder = new int[probabilities.length];
+        int sortAux;
+        for (int i = 0; i < probabilities.length -1 ; i++) {
+            for (int j = i +1 ; j < probabilities.length; j++) {
+                if(probabilities[i] > probabilities[j]) {
+                    sortAux = indexOrder[i];
+                    indexOrder[i] = indexOrder[j];
+                    indexOrder[j] = sortAux;
+                }
+            }
+        }
+
+        double summProb = 0;
+        int lastZeroPos = -1;
+        for (int i = 0; i < probabilities.length; i++) {
+            if(!usedIndexes.contains(i)) {
+                summProb += probabilities[i];
+
+                if(probabilities[i] == 0) {
+                    lastZeroPos = i;
+                }
+            }
+        }
+
+        if(summProb == 0) return lastZeroPos;
+
+        Random random = new Random();
+        double randomValue = summProb * random.nextDouble();
+        summProb = 0;
+        int index = -1;
+        while (summProb <= randomValue) {
+            index++;
+            if(!usedIndexes.contains(indexOrder[index])) {
+                summProb += probabilities[indexOrder[index]];
+            }
+        }
+
+        return indexOrder[index];
+    }
+
+
+
 }

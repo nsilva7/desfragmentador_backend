@@ -60,7 +60,7 @@ public class EstablisedRoute {
         this.core = core;
     }
 
-    public List getPath() {
+    public List<Link> getPath() {
         return path;
     }
 
