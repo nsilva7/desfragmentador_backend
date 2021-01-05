@@ -246,4 +246,15 @@ public class Utils {
             }
         }
     }
+
+    public static void deallocateFs(Graph graph, EstablisedRoute establisedRoute){
+        int core = establisedRoute.getCore();
+        for (Link link: establisedRoute.getPath()){
+            Link linkAux = (Link) graph.getEdge(link.getFrom(),link.getTo());
+            for (int i = establisedRoute.getFsIndexBegin(); i < establisedRoute.getFsIndexBegin() + establisedRoute.getFs(); i++){
+                linkAux.getCores().get(core).getFs().get(i).setFree(true);
+                linkAux.getCores().get(core).getFs().get(i).setLifetime(0);
+            }
+        }
+    }
 }

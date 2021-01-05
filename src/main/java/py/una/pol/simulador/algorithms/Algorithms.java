@@ -1,5 +1,7 @@
 package py.una.pol.simulador.algorithms;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jgrapht.GraphPath;
 import py.una.pol.simulador.model.Demand;
 import org.jgrapht.Graph;
@@ -9,6 +11,7 @@ import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.utils.Utils;
 import sun.rmi.runtime.Log;
 
+import java.awt.image.AreaAveragingScaleFilter;
 import java.util.*;
 
 import static py.una.pol.simulador.utils.Utils.*;
@@ -258,10 +261,14 @@ public class Algorithms {
 
     }
 
-    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric,int FSminPC) {
+    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric,int FSminPC, double improvement) {
         double[] probabilities = new double[establishedRoutes.size()];
         double[] pheromones = new double[establishedRoutes.size()];
         double[] visibility = new double[establishedRoutes.size()];
+        double currentImprovement = 0;
+        ArrayList<Integer> usedIndexes =  new ArrayList<>();
+        List<EstablisedRoute> selectedRoutes = new ArrayList<>();
+
 
         for (int i = 0; i < establishedRoutes.size(); i++) {
             pheromones[i] = 1;
@@ -277,6 +284,30 @@ public class Algorithms {
 
             for (int j = 0; j < probabilities.length; j++) {
                 probabilities[j] = pheromones[j]*visibility[j]/summ;
+            }
+
+            while(currentImprovement < improvement) {
+                ObjectMapper objectMapper = new ObjectMapper();
+
+                try {
+                    Graph graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), Graph.class);
+                    int routeIndex = selectRoute(probabilities,usedIndexes);
+                    usedIndexes.add(routeIndex);
+                    selectedRoutes.add(establishedRoutes.get(routeIndex));
+                    Utils.deallocateFs(graphAux,establishedRoutes.get(routeIndex));
+
+                    if(selectedRoutes.size() > 1) {
+                        sortRoutes(selectedRoutes);
+                    }
+
+                    for (int j = 0; j < selectedRoutes.size() ; j++) {
+
+                    }
+
+
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
             }
 
 
@@ -315,6 +346,11 @@ public class Algorithms {
     public static int selectRoute(double[] probabilities, ArrayList usedIndexes) {
         int[] indexOrder = new int[probabilities.length];
         int sortAux;
+
+        for (int i = 0; i < probabilities.length -1 ; i++) {
+            indexOrder[i] = i;
+        }
+
         for (int i = 0; i < probabilities.length -1 ; i++) {
             for (int j = i +1 ; j < probabilities.length; j++) {
                 if(probabilities[i] > probabilities[j]) {
@@ -349,10 +385,20 @@ public class Algorithms {
                 summProb += probabilities[indexOrder[index]];
             }
         }
-
         return indexOrder[index];
     }
 
+    public static void sortRoutes(List<EstablisedRoute> routes) {
+        for (int i = 0; i < routes.size() - 1 ; i++) {
+            for (int j = i + 1; j < routes.size() ; j++) {
+                if(routes.get(j).getFs() > routes.get(i).getFs()) {
+                    EstablisedRoute routeAux = routes.get(i);
+                    routes.set(i,routes.get(j));
+                    routes.set(j,routeAux);
+                }
+            }
+        }
+    }
 
 
 }
