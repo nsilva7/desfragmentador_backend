@@ -4,6 +4,7 @@ import org.jgrapht.GraphPath;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class EstablisedRoute {
 //    private GraphPath path;
@@ -95,4 +96,19 @@ public class EstablisedRoute {
                 ", to=" + to +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EstablisedRoute that = (EstablisedRoute) o;
+        return fsIndexBegin == that.fsIndexBegin &&
+                fs == that.fs &&
+                timeLife == that.timeLife &&
+                from == that.from &&
+                to == that.to &&
+                core == that.core &&
+                path.equals(that.path);
+    }
+
 }

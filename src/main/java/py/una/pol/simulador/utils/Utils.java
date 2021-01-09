@@ -257,4 +257,36 @@ public class Utils {
             }
         }
     }
+
+    public static int getCore(int limit, boolean [] tested){
+        Random r = new Random();
+        int core = r.nextInt(limit);
+        while(tested[core]){
+            core = r.nextInt(limit);
+        }
+        tested[core] = true;
+        return core;
+    }
+
+    public static double graphEntropyCalculation(Graph graph){
+        List<FrecuencySlot> fs;
+        double uelink=0;
+        int ueCount = 0;
+        int cores = 0;
+        for (Object link: graph.edgeSet()) {
+            cores = ((Link)link).getCores().size();
+            for(int core = 0; core < cores; core++){
+                fs = ((Link)link).getCores().get(core).getFs();
+                ueCount = 0;
+                for (int i = 0; i < fs.size() - 1 ; i++) {
+                    if(fs.get(i).isFree() != fs.get(i+1).isFree()){
+                        ueCount++;
+                    }
+                }
+            }
+            uelink += ueCount;
+        }
+
+        return uelink/graph.edgeSet().size()*cores;
+    }
 }

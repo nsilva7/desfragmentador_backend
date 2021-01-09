@@ -3,6 +3,7 @@ package py.una.pol.simulador.algorithms;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import py.una.pol.simulador.model.Demand;
 import org.jgrapht.Graph;
 import py.una.pol.simulador.model.EstablisedRoute;
@@ -12,6 +13,8 @@ import py.una.pol.simulador.utils.Utils;
 import sun.rmi.runtime.Log;
 
 import java.awt.image.AreaAveragingScaleFilter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static py.una.pol.simulador.utils.Utils.*;
@@ -261,14 +264,39 @@ public class Algorithms {
 
     }
 
-    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric,int FSminPC, double improvement) {
+    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity) throws JsonProcessingException {
         double[] probabilities = new double[establishedRoutes.size()];
         double[] pheromones = new double[establishedRoutes.size()];
         double[] visibility = new double[establishedRoutes.size()];
+        double ro = 0.1;
         double currentImprovement = 0;
+        double graphEntropy = 0;
+        Graph graphAux = null;
+        Graph bestGraph = graph;
+        boolean success = false;
         ArrayList<Integer> usedIndexes =  new ArrayList<>();
         List<EstablisedRoute> selectedRoutes = new ArrayList<>();
+        List<EstablisedRoute> optimalSelectedRoutes = new ArrayList<>();
+        int count;
+        int sameReRouting = 0;
+        ObjectMapper objectMapper = new ObjectMapper();
 
+        boolean blocked = false;
+
+        switch (metric) {
+            case "Entropía":
+                graphEntropy = Utils.graphEntropyCalculation(graph);
+                break;
+            case "Path Consecutiveness":
+//                pathGrafo = Metricas.PathConsecutiveness(caminosDeDosEnlaces, capacidad, G, FSMinPC);
+                break;
+            case "BFR":
+//                bfrGrafo = Metricas.BFR(G, capacidad);
+                break;
+            case "MSI":
+//                msiGrafo = Metricas.MSI(G, capacidad);
+                break;
+        }
 
         for (int i = 0; i < establishedRoutes.size(); i++) {
             pheromones[i] = 1;
@@ -277,7 +305,11 @@ public class Algorithms {
 
         double summ;
         for (int i = 0; i < antsq; i++) {
+            selectedRoutes.clear();
+            usedIndexes.clear();
+            currentImprovement = 0;
             summ = 0;
+            sameReRouting = 0;
             for (int j = 0; j < pheromones.length ; j++) {
                 summ += pheromones[j]*visibility[j];
             }
@@ -285,34 +317,85 @@ public class Algorithms {
             for (int j = 0; j < probabilities.length; j++) {
                 probabilities[j] = pheromones[j]*visibility[j]/summ;
             }
-
-            while(currentImprovement < improvement) {
-                ObjectMapper objectMapper = new ObjectMapper();
-
+            count = 0;
+            while(currentImprovement < improvement && count < establishedRoutes.size()) {
                 try {
-                    Graph graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), Graph.class);
+                    graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), Graph.class);
                     int routeIndex = selectRoute(probabilities,usedIndexes);
                     usedIndexes.add(routeIndex);
                     selectedRoutes.add(establishedRoutes.get(routeIndex));
                     Utils.deallocateFs(graphAux,establishedRoutes.get(routeIndex));
 
                     if(selectedRoutes.size() > 1) {
-                        sortRoutes(selectedRoutes);
+                        sortRoutes(selectedRoutes, usedIndexes);
                     }
-
+                    blocked = false;
                     for (int j = 0; j < selectedRoutes.size() ; j++) {
-
+                        Demand demand = new Demand(selectedRoutes.get(j).getFrom(), selectedRoutes.get(j).getTo(), selectedRoutes.get(j).getFs(), selectedRoutes.get(j).getTimeLife());
+                        List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                        boolean [] tested = new boolean[selectedRoutes.get(j).getPath().get(0).getCores().size()];
+                        Arrays.fill(tested, false);
+                        int core;
+                        while (true){
+                            core = Utils.getCore(selectedRoutes.get(j).getPath().get(0).getCores().size(), tested);
+                            Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
+                            Method method = Algorithms.class.getMethod(routingAlg, paramTypes);
+                            Object establisedRoute = method.invoke(Algorithms.class, graphAux, kspaths, demand, capacity, core);
+                            if(establisedRoute == null){
+                                tested[core] = true;//Se marca el core probado
+                                if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
+                                    blocked = true;
+                                    break;
+                                }
+                            }else{
+                                //Ruta establecida
+                                Utils.assignFs((EstablisedRoute)establisedRoute, core);
+                                if(establisedRoute.equals(selectedRoutes.get(j)))
+                                    sameReRouting++;
+                                break;
+                            }
+                        }
                     }
-
-
-                } catch (JsonProcessingException e) {
+                    if(blocked)
+                        currentImprovement = 0;
+                    else
+                        currentImprovement = improvementCalculation(graphAux, metric, graphEntropy);
+                    count++;
+                } catch (JsonProcessingException | NoSuchMethodException  | IllegalAccessException | InvocationTargetException e) {
                     e.printStackTrace();
                 }
             }
+            if((currentImprovement >= improvement) && (selectedRoutes.size() - sameReRouting < optimalSelectedRoutes.size() || optimalSelectedRoutes.size() == 0)){
+                optimalSelectedRoutes.clear();
+                optimalSelectedRoutes.addAll(selectedRoutes);
+                bestGraph = objectMapper.readValue(objectMapper.writeValueAsString(graphAux), Graph.class);
+                success = true;
+                for(int index : usedIndexes){
+                    pheromones[index] += currentImprovement/100;
+                }
+            }
 
-
+            //Evaporar feromonas
+            for (int index = 0; index < pheromones.length; index++){
+                pheromones[index] *= (1-ro);
+            }
         }
-        return false;
+        if(success){
+            graph = bestGraph;
+        }
+        return success;
+    }
+
+    private static double improvementCalculation(Graph graph, String metric, double graphEntropy){
+
+        switch (metric) {
+            case "ENTROPIA":
+                double currentGraphEntropy = Utils.graphEntropyCalculation(graph);
+                return 100 - currentGraphEntropy*100/graphEntropy;
+
+            default:
+                return 0;
+        }
     }
 
     public static double visibilityCalc(EstablisedRoute establishedRoute, String metric, int FSminPC) {
@@ -388,13 +471,17 @@ public class Algorithms {
         return indexOrder[index];
     }
 
-    public static void sortRoutes(List<EstablisedRoute> routes) {
+    public static void sortRoutes(List<EstablisedRoute> routes, ArrayList<Integer> usedIndexes) {
         for (int i = 0; i < routes.size() - 1 ; i++) {
             for (int j = i + 1; j < routes.size() ; j++) {
                 if(routes.get(j).getFs() > routes.get(i).getFs()) {
                     EstablisedRoute routeAux = routes.get(i);
                     routes.set(i,routes.get(j));
                     routes.set(j,routeAux);
+
+                    int indexAux = usedIndexes.get(i);
+                    usedIndexes.set(i,usedIndexes.get(j));
+                    usedIndexes.set(j,indexAux);
                 }
             }
         }

@@ -1,5 +1,7 @@
 package py.una.pol.simulador.model;
 
+import java.util.Objects;
+
 public class FrecuencySlot {
     private int lifetime;
     private boolean free;
@@ -54,5 +56,20 @@ public class FrecuencySlot {
                 ", free=" + free +
                 ", fsWidh=" + fsWidh +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FrecuencySlot that = (FrecuencySlot) o;
+        return lifetime == that.lifetime &&
+                free == that.free &&
+                Double.compare(that.fsWidh, fsWidh) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lifetime, free, fsWidh);
     }
 }

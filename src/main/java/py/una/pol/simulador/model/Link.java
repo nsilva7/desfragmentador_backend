@@ -1,6 +1,7 @@
 package py.una.pol.simulador.model;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Link {
     private int distance;
@@ -56,5 +57,21 @@ public class Link {
 //                ", to=" + to +
                 + from + " - " + to +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Link link = (Link) o;
+        return distance == link.distance &&
+                from == link.from &&
+                to == link.to &&
+                cores.equals(link.cores);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(distance, cores, from, to);
     }
 }
