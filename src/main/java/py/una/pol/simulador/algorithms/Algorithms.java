@@ -4,11 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
-import py.una.pol.simulador.model.Demand;
+import py.una.pol.simulador.model.*;
 import org.jgrapht.Graph;
-import py.una.pol.simulador.model.EstablisedRoute;
-import py.una.pol.simulador.model.FrecuencySlot;
-import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.utils.Utils;
 import sun.rmi.runtime.Log;
 
@@ -271,6 +268,7 @@ public class Algorithms {
         double ro = 0.1;
         double currentImprovement = 0;
         double graphEntropy = 0;
+        double graphBFR = 0;
         Graph graphAux = null;
         Graph bestGraph = graph;
         boolean success = false;
@@ -291,7 +289,7 @@ public class Algorithms {
 //                pathGrafo = Metricas.PathConsecutiveness(caminosDeDosEnlaces, capacidad, G, FSMinPC);
                 break;
             case "BFR":
-//                bfrGrafo = Metricas.BFR(G, capacidad);
+                graphBFR = BFR(graph, capacity);
                 break;
             case "MSI":
 //                msiGrafo = Metricas.MSI(G, capacidad);
@@ -393,6 +391,7 @@ public class Algorithms {
                 double currentGraphEntropy = Utils.graphEntropyCalculation(graph);
                 return 100 - currentGraphEntropy*100/graphEntropy;
 
+
             default:
                 return 0;
         }
@@ -405,6 +404,146 @@ public class Algorithms {
         }
 
         return -1;
+    }
+
+    public static double PathConsecutiveness (List<GraphPath> twoLinksRoutes, int capacity, Graph g, int FSMinPC){
+        double sum=0;
+        boolean so[] = new boolean[capacity];
+        boolean goNextBlock;//bandera para avisar que tiene que ir al siguiente bloque
+        int cgb = 0;//contador global de bloques
+        double CE;
+        double joins, cfs;
+        int contFSMinPC = 0; //contador para saber si tiene el mínimo de espacio para ser considerado libre
+        int cores= 0;
+        for(GraphPath route : twoLinksRoutes){
+            cores = ((Link)route.getEdgeList().get(0)).getCores().size();
+            //Se setean los slots libres
+            for(int i = 0; i < cores; i++){
+                Arrays.fill(so, false); //Se inicializa todo el espectro como libre
+                for(int j=0;j<capacity;j++){
+                    for (Link link: (List<Link>) route.getEdgeList()){
+                        FrecuencySlot fs = link.getCores().get(i).getFs().get(j);
+                        if(!fs.isFree()){
+                            so[i] = true;
+                        }
+                    }
+
+                }
+
+                //pone ocupado los bloques menores al minimo
+                for(int j=0;j<capacity;j++){
+                    contFSMinPC = 0; //reset
+                    if(so[j]){
+                        for(int k=j;k<capacity;k++){
+                            if(so[j]){
+                                contFSMinPC++;
+                            }else{
+                                break;
+                            }
+                        }
+                        if(contFSMinPC < FSMinPC){
+                            //poner como ocupados
+                            for(int l=0;l < contFSMinPC;l++){
+                                so[j + l] = false;
+                            }
+                        }
+                        j = j + contFSMinPC; //para que ya no controle los siguientes que ya controló
+                    }
+                }
+
+                //calcular cantidad de bloques libres
+                goNextBlock = false;
+                cgb = 0;
+                for(int j=0;j<capacity;j++){
+                    if(!so[j] && !goNextBlock){
+                        cgb++;
+                        goNextBlock = true;
+                    }else if (so[j]){
+                        goNextBlock = false;
+                    }
+                }
+
+                cfs = 0;
+                joins = 0;
+                for(int j=0;j<capacity - 1;j++){ //recorre hasta el penúltimo fs
+                    int slot = so[j]?0:1;
+                    int nextSlot = so[j+1]?0:1;
+                    joins += slot*nextSlot;
+                    if(!so[j]){
+                        cfs++;
+                    }
+                }
+                //para el ultimo fs
+                if(!so[capacity - 1]){
+                    cfs++;
+                }
+
+                if(cgb==0){
+                    CE=0;
+                }else{
+                    CE = (joins / cgb) * (cfs / capacity);
+                }
+                sum += CE;
+            }
+
+        }
+
+        return sum/twoLinksRoutes.size()*cores;
+    }
+
+    public static double BFR(Graph g, int capacity){
+        double ocuppiedSlotCount = 0;
+        double freeBlockSize = 0;
+        double maxBlock = 0;
+        double BFRLinks = 0;
+        int cores = 0;
+
+        for (Link link: (List<Link>) g.edgeSet()) {
+            cores = link.getCores().size();
+            for (Core core: link.getCores()) {
+                for (int i=0; i< capacity; i++){
+                    if (core.getFs().get(i).isFree()){
+                        freeBlockSize++;
+                    }else{
+                        if (freeBlockSize > maxBlock ){
+                            maxBlock  = freeBlockSize;
+                        }
+                        freeBlockSize = 0;
+                        ocuppiedSlotCount++;
+                    }
+                }
+
+                if (freeBlockSize > maxBlock ){
+                    maxBlock  = freeBlockSize;
+                }
+
+                BFRLinks +=  (1 - maxBlock/(capacity-ocuppiedSlotCount));
+            }
+
+        }
+
+        return BFRLinks/g.edgeSet().size()*cores;
+    }
+
+    public static double MSI(Graph g){
+        int greaterFreeIndex = 0;
+        double MSILink = 0;
+        int cores = 0;
+        for (Link link: (List<Link>) g.edgeSet()) {
+            cores = link.getCores().size();
+            for (Core core: link.getCores()) {
+                for (int i=core.getFs().size() - 1; i >= 0; i--){
+                    if (core.getFs().get(i).isFree()){
+                        greaterFreeIndex = i;
+                        break;
+                    }
+                }
+                MSILink += greaterFreeIndex;
+
+            }
+        }
+
+        return MSILink/g.edgeSet().size()*cores;
     }
 
     public static double routeEntropy(EstablisedRoute establishedRoute) {

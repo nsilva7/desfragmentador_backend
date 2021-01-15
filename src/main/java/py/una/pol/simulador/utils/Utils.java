@@ -1,5 +1,8 @@
 package py.una.pol.simulador.utils;
+import org.jgrapht.GraphMetrics;
 import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.GraphWalk;
 import py.una.pol.simulador.model.Demand;
 
 import java.util.*;
@@ -205,6 +208,24 @@ public class Utils {
         return slotCuts;
 
 
+    }
+
+    public static List<GraphPath> twoLinksRoutes(Graph g) {
+        List<GraphPath> paths = new ArrayList<>();
+        for (int i = 0; i < g.vertexSet().size() ; i++) {
+            for(Link link1: (List<Link>)g.outgoingEdgesOf(i)) {
+                for(Link link2: (List<Link>)g.outgoingEdgesOf(link1.getTo())) {
+                    List<Link> path = new ArrayList<>();
+                    path.add(link1);
+                    path.add(link2);
+
+                    GraphWalk gw = new GraphWalk(g,i,link2.getTo(),path,1);
+                    paths.add(gw);
+                }
+            }
+        }
+
+        return paths;
     }
 
 
