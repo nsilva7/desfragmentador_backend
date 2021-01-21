@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.GraphWalk;
 import py.una.pol.simulador.model.*;
 import org.jgrapht.Graph;
 import py.una.pol.simulador.utils.Utils;
@@ -269,6 +270,8 @@ public class Algorithms {
         double currentImprovement = 0;
         double graphEntropy = 0;
         double graphBFR = 0;
+        double graphPC = 0;
+        double graphMSI = 0;
         Graph graphAux = null;
         Graph bestGraph = graph;
         boolean success = false;
@@ -286,19 +289,19 @@ public class Algorithms {
                 graphEntropy = Utils.graphEntropyCalculation(graph);
                 break;
             case "Path Consecutiveness":
-//                pathGrafo = Metricas.PathConsecutiveness(caminosDeDosEnlaces, capacidad, G, FSMinPC);
+                graphPC = PathConsecutiveness(Utils.twoLinksRoutes(graph), capacity, FSminPC);
                 break;
             case "BFR":
                 graphBFR = BFR(graph, capacity);
                 break;
             case "MSI":
-//                msiGrafo = Metricas.MSI(G, capacidad);
+                graphMSI =MSI(graph);
                 break;
         }
 
         for (int i = 0; i < establishedRoutes.size(); i++) {
             pheromones[i] = 1;
-            visibility[i] = visibilityCalc(establishedRoutes.get(i),metric,FSminPC);
+            visibility[i] = visibilityCalc(establishedRoutes.get(i),metric,FSminPC,capacity,graph);
         }
 
         double summ;
@@ -357,7 +360,7 @@ public class Algorithms {
                     if(blocked)
                         currentImprovement = 0;
                     else
-                        currentImprovement = improvementCalculation(graphAux, metric, graphEntropy);
+                        currentImprovement = improvementCalculation(graphAux, metric, capacity,graphEntropy,graphBFR,graphMSI,graphPC,FSminPC);
                     count++;
                 } catch (JsonProcessingException | NoSuchMethodException  | IllegalAccessException | InvocationTargetException e) {
                     e.printStackTrace();
@@ -384,29 +387,53 @@ public class Algorithms {
         return success;
     }
 
-    private static double improvementCalculation(Graph graph, String metric, double graphEntropy){
+    private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC){
 
         switch (metric) {
             case "ENTROPIA":
                 double currentGraphEntropy = Utils.graphEntropyCalculation(graph);
                 return 100 - currentGraphEntropy*100/graphEntropy;
-
-
+            case "BFR":
+               double currentBFR = BFR(graph, capacity);
+               return 100 - ((roundDecimals(currentBFR, 6) * 100)/roundDecimals(graphBFR, 6));
+            case "MSI":
+                double currentMSI = MSI(graph);
+                return 100 - ((roundDecimals(currentMSI, 6) * 100)/roundDecimals(graphMSI, 6));
+            case "PATH_CONSECUTIVENESS":
+                double currentPC = PathConsecutiveness(Utils.twoLinksRoutes(graph), capacity, fsMinPC);
+                return ((roundDecimals(currentPC, 6) * 100)/roundDecimals(graphPC, 6))-100;
             default:
                 return 0;
         }
     }
 
-    public static double visibilityCalc(EstablisedRoute establishedRoute, String metric, int FSminPC) {
+    public static double visibilityCalc(EstablisedRoute establishedRoute, String metric, int FSminPC, int capacity, Graph g) {
         switch (metric) {
             case "ENTROPIA":
                 return routeEntropy(establishedRoute);
+            case "BFR":
+                return routeBFR(establishedRoute,capacity);
+            case "PATH_CONSECUTIVENESS":
+                List<GraphPath> routes = new ArrayList<>();
+                GraphWalk gw = new GraphWalk(g,establishedRoute.getFrom(),establishedRoute.getTo(),establishedRoute.getPath(),1);
+                routes.add(gw);
+                double pathAux = PathConsecutiveness(routes,capacity,FSminPC);
+                return capacity - 1 - pathAux;
         }
 
         return -1;
     }
 
-    public static double PathConsecutiveness (List<GraphPath> twoLinksRoutes, int capacity, Graph g, int FSMinPC){
+    public static double roundDecimals(double value, int decimals) {
+        double result = value * Math.pow(10, decimals);
+        result = Math.round(result);
+        result = Math.floor(result);
+        result = result / (Math.pow(10, decimals));
+
+        return result;
+    }
+
+    public static double PathConsecutiveness (List<GraphPath> twoLinksRoutes, int capacity, int FSMinPC){
         double sum=0;
         boolean so[] = new boolean[capacity];
         boolean goNextBlock;//bandera para avisar que tiene que ir al siguiente bloque
@@ -490,15 +517,14 @@ public class Algorithms {
 
         return sum/twoLinksRoutes.size()*cores;
     }
-
-    public static double BFR(Graph g, int capacity){
+    public static double BFRLinks(List<Link> links, int capacity) {
         double ocuppiedSlotCount = 0;
         double freeBlockSize = 0;
         double maxBlock = 0;
         double BFRLinks = 0;
         int cores = 0;
 
-        for (Link link: (List<Link>) g.edgeSet()) {
+        for (Link link: links) {
             cores = link.getCores().size();
             for (Core core: link.getCores()) {
                 for (int i=0; i< capacity; i++){
@@ -522,14 +548,32 @@ public class Algorithms {
 
         }
 
+        return BFRLinks;
+    }
+    public static double BFR(Graph g, int capacity){
+        double ocuppiedSlotCount = 0;
+        double freeBlockSize = 0;
+        double maxBlock = 0;
+        double BFRLinks = 0;
+        int cores = 0;
+
+        BFRLinks = BFRLinks( (List<Link>) g.edgeSet(),capacity);
+
         return BFRLinks/g.edgeSet().size()*cores;
     }
 
-    public static double MSI(Graph g){
+    public static double routeBFR(EstablisedRoute route, int capacity){
+
+        double BFRLinks = BFRLinks(route.getPath(),capacity);
+
+        return BFRLinks/route.getPath().size();
+    }
+
+    public static double MSILinks(List<Link> links) {
         int greaterFreeIndex = 0;
         double MSILink = 0;
         int cores = 0;
-        for (Link link: (List<Link>) g.edgeSet()) {
+        for (Link link: links) {
             cores = link.getCores().size();
             for (Core core: link.getCores()) {
                 for (int i=core.getFs().size() - 1; i >= 0; i--){
@@ -543,7 +587,21 @@ public class Algorithms {
             }
         }
 
+        return MSILink;
+    }
+
+    public static double MSI(Graph g){
+        int cores =( (List<Link>)g.edgeSet()).get(0).getCores().size();
+        double MSILink = MSILinks((List<Link>)g.edgeSet());
+
         return MSILink/g.edgeSet().size()*cores;
+    }
+
+    public static double MSIPath(EstablisedRoute route){
+        int cores = route.getPath().get(0).getCores().size();
+        double MSILink = MSILinks(route.getPath());
+
+        return MSILink/route.getPath().size()*cores;
     }
 
     public static double routeEntropy(EstablisedRoute establishedRoute) {
