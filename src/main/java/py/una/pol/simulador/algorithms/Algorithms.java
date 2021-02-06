@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.AbstractBaseGraph;
 import org.jgrapht.graph.GraphWalk;
+import org.jgrapht.graph.SimpleWeightedGraph;
 import py.una.pol.simulador.model.*;
 import org.jgrapht.Graph;
 import py.una.pol.simulador.utils.Utils;
@@ -285,10 +287,10 @@ public class Algorithms {
         boolean blocked = false;
 
         switch (metric) {
-            case "Entropía":
+            case "ENTROPY":
                 graphEntropy = Utils.graphEntropyCalculation(graph);
                 break;
-            case "Path Consecutiveness":
+            case "PATH_CONSECUTIVENESS":
                 graphPC = PathConsecutiveness(Utils.twoLinksRoutes(graph), capacity, FSminPC);
                 break;
             case "BFR":
@@ -321,7 +323,8 @@ public class Algorithms {
             count = 0;
             while(currentImprovement < improvement && count < establishedRoutes.size()) {
                 try {
-                    graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), Graph.class);
+                    graphAux = (Graph) ((AbstractBaseGraph)graph).clone();
+                    //graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), SimpleWeightedGraph.class);
                     int routeIndex = selectRoute(probabilities,usedIndexes);
                     usedIndexes.add(routeIndex);
                     selectedRoutes.add(establishedRoutes.get(routeIndex));
@@ -362,7 +365,7 @@ public class Algorithms {
                     else
                         currentImprovement = improvementCalculation(graphAux, metric, capacity,graphEntropy,graphBFR,graphMSI,graphPC,FSminPC);
                     count++;
-                } catch (JsonProcessingException | NoSuchMethodException  | IllegalAccessException | InvocationTargetException e) {
+                } catch ( NoSuchMethodException  | IllegalAccessException | InvocationTargetException e) {
                     e.printStackTrace();
                 }
             }
@@ -390,7 +393,7 @@ public class Algorithms {
     private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC){
 
         switch (metric) {
-            case "ENTROPIA":
+            case "ENTROPY":
                 double currentGraphEntropy = Utils.graphEntropyCalculation(graph);
                 return 100 - currentGraphEntropy*100/graphEntropy;
             case "BFR":
@@ -409,7 +412,7 @@ public class Algorithms {
 
     public static double visibilityCalc(EstablisedRoute establishedRoute, String metric, int FSminPC, int capacity, Graph g) {
         switch (metric) {
-            case "ENTROPIA":
+            case "ENTROPY":
                 return routeEntropy(establishedRoute);
             case "BFR":
                 return routeBFR(establishedRoute,capacity);
@@ -556,8 +559,10 @@ public class Algorithms {
         double maxBlock = 0;
         double BFRLinks = 0;
         int cores = 0;
+        List<Link> links = new ArrayList<>();
+        links.addAll(g.edgeSet());
 
-        BFRLinks = BFRLinks( (List<Link>) g.edgeSet(),capacity);
+        BFRLinks = BFRLinks( links,capacity);
 
         return BFRLinks/g.edgeSet().size()*cores;
     }
@@ -591,8 +596,10 @@ public class Algorithms {
     }
 
     public static double MSI(Graph g){
-        int cores =( (List<Link>)g.edgeSet()).get(0).getCores().size();
-        double MSILink = MSILinks((List<Link>)g.edgeSet());
+        List<Link> links = new ArrayList<>();
+        links.addAll(g.edgeSet());
+        int cores =links.get(0).getCores().size();
+        double MSILink = MSILinks(links);
 
         return MSILink/g.edgeSet().size()*cores;
     }
@@ -627,7 +634,7 @@ public class Algorithms {
         int[] indexOrder = new int[probabilities.length];
         int sortAux;
 
-        for (int i = 0; i < probabilities.length -1 ; i++) {
+        for (int i = 0; i < probabilities.length; i++) {
             indexOrder[i] = i;
         }
 
@@ -652,18 +659,26 @@ public class Algorithms {
                 }
             }
         }
-
+        System.out.println("-----------------------");
+        System.out.println("tru summProb: " + summProb);
         if(summProb == 0) return lastZeroPos;
 
         Random random = new Random();
         double randomValue = summProb * random.nextDouble();
         summProb = 0;
         int index = -1;
+        System.out.println("RANDONVALUE: " + randomValue);
+        System.out.println("probabilities.length: "+ probabilities.length);
+        System.out.println("usedIndexes.size: "+ usedIndexes.size());
+        System.out.println(indexOrder);
         while (summProb <= randomValue) {
             index++;
+            System.out.print(indexOrder[index] + " - ");
             if(!usedIndexes.contains(indexOrder[index])) {
                 summProb += probabilities[indexOrder[index]];
             }
+//            System.out.println("summProb: " + summProb);
+//            System.out.println("index: " + index);
         }
         return indexOrder[index];
     }

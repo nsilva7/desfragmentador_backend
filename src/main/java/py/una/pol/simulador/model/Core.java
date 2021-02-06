@@ -40,17 +40,5 @@ public class Core {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Core core = (Core) o;
-        return Double.compare(core.bandwidth, bandwidth) == 0 &&
-                Objects.equals(fs, core.fs);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(bandwidth, fs);
-    }
 }

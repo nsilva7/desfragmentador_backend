@@ -93,6 +93,7 @@ public class SimuladorController {
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 System.out.println("BLOQUEO");
+                                Algorithms.aco_def(net,establishedRoutes,3,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity());
                                 demand.setBlocked(true);
                                 this.template.convertAndSend("/message",  demand);
                                 break;

@@ -97,18 +97,6 @@ public class EstablisedRoute {
                 '}';
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EstablisedRoute that = (EstablisedRoute) o;
-        return fsIndexBegin == that.fsIndexBegin &&
-                fs == that.fs &&
-                timeLife == that.timeLife &&
-                from == that.from &&
-                to == that.to &&
-                core == that.core &&
-                path.equals(that.path);
-    }
+
 
 }

@@ -213,13 +213,13 @@ public class Utils {
     public static List<GraphPath> twoLinksRoutes(Graph g) {
         List<GraphPath> paths = new ArrayList<>();
         for (int i = 0; i < g.vertexSet().size() ; i++) {
-            for(Link link1: (List<Link>)g.outgoingEdgesOf(i)) {
-                for(Link link2: (List<Link>)g.outgoingEdgesOf(link1.getTo())) {
+            for(Object link1: g.outgoingEdgesOf(i)) {
+                for(Object link2: g.outgoingEdgesOf(((Link)link1).getTo())) {
                     List<Link> path = new ArrayList<>();
-                    path.add(link1);
-                    path.add(link2);
+                    path.add(((Link)link1));
+                    path.add(((Link)link2));
 
-                    GraphWalk gw = new GraphWalk(g,i,link2.getTo(),path,1);
+                    GraphWalk gw = new GraphWalk(g,i,((Link)link2).getTo(),path,1);
                     paths.add(gw);
                 }
             }
