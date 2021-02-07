@@ -93,16 +93,16 @@ public class SimuladorController {
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 System.out.println("BLOQUEO");
-                                Algorithms.aco_def(net,establishedRoutes,3,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity());
+                                Algorithms.aco_def(net,establishedRoutes,30,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity());
                                 demand.setBlocked(true);
-                                this.template.convertAndSend("/message",  demand);
+                                //this.template.convertAndSend("/message",  demand);
                                 break;
                             }
                         }else{
                             //Ruta establecida
                             establishedRoutes.add((EstablisedRoute) establisedRoute);
                             Utils.assignFs((EstablisedRoute)establisedRoute, core);
-                            this.template.convertAndSend("/message",  establisedRoute);
+                            //this.template.convertAndSend("/message",  establisedRoute);
                             break;
                         }
                     }
@@ -110,8 +110,8 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
                 try {
-                    wait = 1000/demands.size();
-                    TimeUnit.MILLISECONDS.sleep(wait);
+                   /* wait = 1000/demands.size();
+                    TimeUnit.MILLISECONDS.sleep(wait);*/
 //                    Object.wait (wait);
                 }catch (java.lang.Exception e){
                     e.printStackTrace();
@@ -121,11 +121,11 @@ public class SimuladorController {
             rSlots.setTime(i + 2);
             rSlots.setReleased(true);
             rSlots.setReleasedSlots(this.setTimeLife(net));
-            this.template.convertAndSend("/message", rSlots);
+            //this.template.convertAndSend("/message", rSlots);
         }
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
-        this.template.convertAndSend("/message",  map);
+        //this.template.convertAndSend("/message",  map);
     }
 
     private ArrayList<Map<String, String>> setTimeLife(Graph net){

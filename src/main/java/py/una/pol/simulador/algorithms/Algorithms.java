@@ -328,7 +328,11 @@ public class Algorithms {
                     int routeIndex = selectRoute(probabilities,usedIndexes);
                     usedIndexes.add(routeIndex);
                     selectedRoutes.add(establishedRoutes.get(routeIndex));
-                    Utils.deallocateFs(graphAux,establishedRoutes.get(routeIndex));
+
+                    for (int j = 0; j < usedIndexes.size(); j++) {
+                        Utils.deallocateFs(graphAux,establishedRoutes.get(usedIndexes.get(j)));
+                    }
+
 
                     if(selectedRoutes.size() > 1) {
                         sortRoutes(selectedRoutes, usedIndexes);
@@ -422,6 +426,8 @@ public class Algorithms {
                 routes.add(gw);
                 double pathAux = PathConsecutiveness(routes,capacity,FSminPC);
                 return capacity - 1 - pathAux;
+            case "MSI":
+                return establishedRoute.getFsIndexBegin() + establishedRoute.getFs() - 1;
         }
 
         return -1;
@@ -581,6 +587,7 @@ public class Algorithms {
         for (Link link: links) {
             cores = link.getCores().size();
             for (Core core: link.getCores()) {
+                greaterFreeIndex = 0;
                 for (int i=core.getFs().size() - 1; i >= 0; i--){
                     if (core.getFs().get(i).isFree()){
                         greaterFreeIndex = i;
@@ -601,7 +608,7 @@ public class Algorithms {
         int cores =links.get(0).getCores().size();
         double MSILink = MSILinks(links);
 
-        return MSILink/g.edgeSet().size()*cores;
+        return MSILink/(g.edgeSet().size()*cores);
     }
 
     public static double MSIPath(EstablisedRoute route){
