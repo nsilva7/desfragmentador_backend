@@ -63,6 +63,7 @@ public class SimuladorController {
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
+        List<List<GraphPath>> kspList = new ArrayList<>();
         for (int i = 0; i < options.getTime(); i++) {
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
@@ -74,7 +75,9 @@ public class SimuladorController {
             for(Demand demand : demands){
                 ///System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
+                double s0, e0;
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                kspList.add(kspaths);
                 try {
                     boolean [] tested = new boolean[4];
                     Arrays.fill(tested, false);
@@ -93,7 +96,7 @@ public class SimuladorController {
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 System.out.println("BLOQUEO");
-                                Algorithms.aco_def(net,establishedRoutes,30,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity());
+                                Algorithms.aco_def(net,establishedRoutes,30,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
                                 break;
