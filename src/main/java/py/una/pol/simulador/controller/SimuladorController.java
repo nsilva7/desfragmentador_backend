@@ -75,7 +75,6 @@ public class SimuladorController {
             for(Demand demand : demands){
                 ///System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
-                double s0, e0;
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
                 kspList.add(kspaths);
                 try {

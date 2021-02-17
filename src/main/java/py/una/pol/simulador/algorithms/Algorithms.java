@@ -264,7 +264,7 @@ public class Algorithms {
 
     }
 
-    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity) throws JsonProcessingException {
+    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws JsonProcessingException {
         double[] probabilities = new double[establishedRoutes.size()];
         double[] pheromones = new double[establishedRoutes.size()];
         double[] visibility = new double[establishedRoutes.size()];
@@ -337,10 +337,12 @@ public class Algorithms {
                     if(selectedRoutes.size() > 1) {
                         sortRoutes(selectedRoutes, usedIndexes);
                     }
+
                     blocked = false;
                     for (int j = 0; j < selectedRoutes.size() ; j++) {
                         Demand demand = new Demand(selectedRoutes.get(j).getFrom(), selectedRoutes.get(j).getTo(), selectedRoutes.get(j).getFs(), selectedRoutes.get(j).getTimeLife());
-                        List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                        //List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                        List<GraphPath> kspaths = kspList.get(usedIndexes.get(j));
                         boolean [] tested = new boolean[selectedRoutes.get(j).getPath().get(0).getCores().size()];
                         Arrays.fill(tested, false);
                         int core;
@@ -374,9 +376,11 @@ public class Algorithms {
                 }
             }
             if((currentImprovement >= improvement) && (selectedRoutes.size() - sameReRouting < optimalSelectedRoutes.size() || optimalSelectedRoutes.size() == 0)){
+                System.out.println("Llego con currentImprovement: " + currentImprovement + " en count: " + count + " y ant: " + i);
                 optimalSelectedRoutes.clear();
                 optimalSelectedRoutes.addAll(selectedRoutes);
-                bestGraph = objectMapper.readValue(objectMapper.writeValueAsString(graphAux), Graph.class);
+                bestGraph = (Graph) ((AbstractBaseGraph)graphAux).clone();
+                //bestGraph = objectMapper.readValue(objectMapper.writeValueAsString(graphAux), Graph.class);
                 success = true;
                 for(int index : usedIndexes){
                     pheromones[index] += currentImprovement/100;
@@ -666,21 +670,14 @@ public class Algorithms {
                 }
             }
         }
-        System.out.println("-----------------------");
-        System.out.println("tru summProb: " + summProb);
         if(summProb == 0) return lastZeroPos;
 
         Random random = new Random();
         double randomValue = summProb * random.nextDouble();
         summProb = 0;
         int index = -1;
-        System.out.println("RANDONVALUE: " + randomValue);
-        System.out.println("probabilities.length: "+ probabilities.length);
-        System.out.println("usedIndexes.size: "+ usedIndexes.size());
-        System.out.println(indexOrder);
         while (summProb <= randomValue) {
             index++;
-            System.out.print(indexOrder[index] + " - ");
             if(!usedIndexes.contains(indexOrder[index])) {
                 summProb += probabilities[indexOrder[index]];
             }
