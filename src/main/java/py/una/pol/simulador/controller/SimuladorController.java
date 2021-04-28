@@ -35,6 +35,8 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.lang.reflect.Type;
 import java.util.concurrent.TimeUnit;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
 
 @RestController
 public class SimuladorController {
@@ -49,7 +51,7 @@ public class SimuladorController {
 //    @CrossOrigin(origins = "http://localhost:4300")
 //    @PostMapping("/simular")
     @MessageMapping("/simular")
-    public void simular(@RequestBody Options options) {
+    public void simular(@RequestBody Options options) throws IOException {
 //        boolean [] testedx = new boolean[4];
 //        Arrays.fill(testedx, false);
 //        for (int k = 1; k < 60; k++){
@@ -58,21 +60,28 @@ public class SimuladorController {
 //        pruebas();
 //        if(1 == 1)
 //            return ;
+
         System.out.println("Opciones: " + options);
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         List<List<GraphPath>> kspList = new ArrayList<>();
+
+        FileWriter file = new FileWriter("datos.txt");
+        BufferedWriter writer = new BufferedWriter(file);
+        int fsRCount = 0;
+        int bloquedFsRc = 0;
+
         for (int i = 0; i < options.getTime(); i++) {
+            System.out.println("Tiempo: " + i);
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
                     options.getFsRangeMin(), options.getFsRangeMax(),
                     net.vertexSet().size(), options.getErlang() / options.getLambda());
 
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
-            System.out.println("Cantidad de de demandas: " + demands.size());
-            for(Demand demand : demands){
+           for(Demand demand : demands){
                 ///System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
@@ -90,44 +99,67 @@ public class SimuladorController {
 //                        System.out.println(establisedRoute);
                         if(establisedRoute == null){
                             tested[core] = true;//Se marca el core probado
-                            System.out.println("POSIBLE BLOQUEO");
-//                            System.out.println(Arrays.asList(tested).contains(false));
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 System.out.println("BLOQUEO");
-                                Algorithms.aco_def(net,establishedRoutes,30,"MSI",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
-                                break;
+                                //break;
                             }
                         }else{
                             //Ruta establecida
                             establishedRoutes.add((EstablisedRoute) establisedRoute);
                             Utils.assignFs((EstablisedRoute)establisedRoute, core);
                             //this.template.convertAndSend("/message",  establisedRoute);
-                            break;
+                            //break;
                         }
+                        //Escritura para recoleccion de datos
+                        if(!demand.getBlocked())
+                            fsRCount += demand.getFs();
+                        else
+                            bloquedFsRc += demand.getFs();
+                        if(establisedRoute != null || demand.getBlocked())
+                            break;
                     }
                 }catch (java.lang.Exception e){
                     e.printStackTrace();
                 }
                 try {
-                   /* wait = 1000/demands.size();
-                    TimeUnit.MILLISECONDS.sleep(wait);*/
-//                    Object.wait (wait);
+                    //wait = 1000/demands.size();
+                    //TimeUnit.MILLISECONDS.sleep(wait);
+                    //Object.wait (wait);
                 }catch (java.lang.Exception e){
                     e.printStackTrace();
                 }
             }
+
             ReleasedSlots rSlots = new ReleasedSlots();
             rSlots.setTime(i + 2);
             rSlots.setReleased(true);
             rSlots.setReleasedSlots(this.setTimeLife(net));
             //this.template.convertAndSend("/message", rSlots);
+
+
+            //System.out.println("ESCRIBIENDO DATOS");
+            writer.write(
+                        i + 1 + ", " +
+                            Utils.graphEntropyCalculation(net) + ", " +
+                            Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), 3) +  " , " +
+                            Algorithms.BFR(net, options.getCapacity()) + " , " +
+                            Algorithms.MSI(net) + " , " +
+                            fsRCount + " , " +
+                            bloquedFsRc
+            );
+            fsRCount = 0;
+            bloquedFsRc = 0;
+            writer.newLine();
         }
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
+        System.out.println("Fin Simulación");
+        writer.close();
     }
 
     private ArrayList<Map<String, String>> setTimeLife(Graph net){

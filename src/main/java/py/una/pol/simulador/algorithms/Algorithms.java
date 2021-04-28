@@ -265,6 +265,8 @@ public class Algorithms {
     }
 
     public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws JsonProcessingException {
+        double e0 = System.currentTimeMillis();
+        System.out.println("INICIA DESFRAGMENTACIÓN ACO");
         double[] probabilities = new double[establishedRoutes.size()];
         double[] pheromones = new double[establishedRoutes.size()];
         double[] visibility = new double[establishedRoutes.size()];
@@ -322,6 +324,7 @@ public class Algorithms {
             }
             count = 0;
             while(currentImprovement < improvement && count < establishedRoutes.size()) {
+                System.out.println("ANT: " + i + " count: " + count + " de: " + establishedRoutes.size());
                 try {
                     graphAux = (Graph) ((AbstractBaseGraph)graph).clone();
                     //graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), SimpleWeightedGraph.class);
@@ -366,6 +369,9 @@ public class Algorithms {
                             }
                         }
                     }
+                    if(currentImprovement > 0)
+
+                        System.out.println("currentImprovement: " + currentImprovement + " count: " + count + " ant: " + i);
                     if(blocked)
                         currentImprovement = 0;
                     else
@@ -395,6 +401,7 @@ public class Algorithms {
         if(success){
             graph = bestGraph;
         }
+        System.out.println("Tiempo de ejecución ACO: " + (System.nanoTime() - e0)/1000000 + "ms");
         return success;
     }
 
@@ -569,11 +576,11 @@ public class Algorithms {
         double maxBlock = 0;
         double BFRLinks = 0;
         int cores = 0;
+
         List<Link> links = new ArrayList<>();
         links.addAll(g.edgeSet());
-
+        cores = links.get(0).getCores().size();
         BFRLinks = BFRLinks( links,capacity);
-
         return BFRLinks/g.edgeSet().size()*cores;
     }
 
@@ -593,7 +600,7 @@ public class Algorithms {
             for (Core core: link.getCores()) {
                 greaterFreeIndex = 0;
                 for (int i=core.getFs().size() - 1; i >= 0; i--){
-                    if (core.getFs().get(i).isFree()){
+                    if (!core.getFs().get(i).isFree()){
                         greaterFreeIndex = i;
                         break;
                     }
@@ -611,7 +618,8 @@ public class Algorithms {
         links.addAll(g.edgeSet());
         int cores =links.get(0).getCores().size();
         double MSILink = MSILinks(links);
-
+       // System.out.println("----MSILink: " + MSILink + "----");
+        //System.out.println("----g.edgeSet().size(): " + g.edgeSet().size() + "----");
         return MSILink/(g.edgeSet().size()*cores);
     }
 

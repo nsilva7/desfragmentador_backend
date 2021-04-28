@@ -23,6 +23,10 @@ public class Demand {
         this.blocked = blocked;
     }
 
+    public boolean getBlocked() {
+        return this.blocked;
+    }
+
     public int getSource() {
         return source;
     }
