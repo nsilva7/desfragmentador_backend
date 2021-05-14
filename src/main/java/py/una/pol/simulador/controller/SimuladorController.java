@@ -73,7 +73,11 @@ public class SimuladorController {
         int fsRCount = 0;
         int bloquedFsRc = 0;
 
+
+        writer.write("time, entropy, path_consecutiveness, bfr, msi, demands, blocked_demands");
+        writer.newLine();
         for (int i = 0; i < options.getTime(); i++) {
+            int blockedDemand = 0;
             System.out.println("Tiempo: " + i);
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
@@ -104,6 +108,7 @@ public class SimuladorController {
                                 System.out.println("BLOQUEO");
                                 //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
+                                blockedDemand++;
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
                             }
@@ -139,17 +144,18 @@ public class SimuladorController {
             rSlots.setReleased(true);
             rSlots.setReleasedSlots(this.setTimeLife(net));
             //this.template.convertAndSend("/message", rSlots);
-
+            int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
 
             //System.out.println("ESCRIBIENDO DATOS");
+            Set edges = net.edgeSet();
             writer.write(
                         i + 1 + ", " +
-                            Utils.graphEntropyCalculation(net) + ", " +
-                            Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), 3) +  " , " +
-                            Algorithms.BFR(net, options.getCapacity()) + " , " +
-                            Algorithms.MSI(net) + " , " +
-                            fsRCount + " , " +
-                            bloquedFsRc
+                                String.format(("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
+                                String.format(("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
+                                String.format(("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
+                                String.format(("%.6f"),Algorithms.MSI(net) )+ " , " +
+                            demands.size() + " , " +
+                            blockedDemand
             );
             fsRCount = 0;
             bloquedFsRc = 0;

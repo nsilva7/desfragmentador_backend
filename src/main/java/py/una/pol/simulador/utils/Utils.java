@@ -215,12 +215,15 @@ public class Utils {
         for (int i = 0; i < g.vertexSet().size() ; i++) {
             for(Object link1: g.outgoingEdgesOf(i)) {
                 for(Object link2: g.outgoingEdgesOf(((Link)link1).getTo())) {
-                    List<Link> path = new ArrayList<>();
-                    path.add(((Link)link1));
-                    path.add(((Link)link2));
+                    if(!link1.equals(link2)){
+                        List<Link> path = new ArrayList<>();
+                        path.add(((Link)link1));
+                        path.add(((Link)link2));
 
-                    GraphWalk gw = new GraphWalk(g,i,((Link)link2).getTo(),path,1);
-                    paths.add(gw);
+                        GraphWalk gw = new GraphWalk(g,i,((Link)link2).getTo(),path,1);
+                        paths.add(gw);
+                    }
+
                 }
             }
         }

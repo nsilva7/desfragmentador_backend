@@ -467,22 +467,21 @@ public class Algorithms {
             //Se setean los slots libres
             for(int i = 0; i < cores; i++){
                 Arrays.fill(so, false); //Se inicializa todo el espectro como libre
-                for(int j=0;j<capacity;j++){
-                    for (Link link: (List<Link>) route.getEdgeList()){
+                for (Link link: (List<Link>) route.getEdgeList()){
+                    for(int j=0;j<capacity;j++){
                         FrecuencySlot fs = link.getCores().get(i).getFs().get(j);
                         if(!fs.isFree()){
-                            so[i] = true;
+                            so[j] = true;
                         }
                     }
-
                 }
 
                 //pone ocupado los bloques menores al minimo
                 for(int j=0;j<capacity;j++){
                     contFSMinPC = 0; //reset
-                    if(so[j]){
+                    if(!so[j]){
                         for(int k=j;k<capacity;k++){
-                            if(so[j]){
+                            if(!so[j]){
                                 contFSMinPC++;
                             }else{
                                 break;
@@ -491,7 +490,7 @@ public class Algorithms {
                         if(contFSMinPC < FSMinPC){
                             //poner como ocupados
                             for(int l=0;l < contFSMinPC;l++){
-                                so[j + l] = false;
+                                so[j + l] = true;
                             }
                         }
                         j = j + contFSMinPC; //para que ya no controle los siguientes que ya controló
@@ -542,10 +541,11 @@ public class Algorithms {
         double freeBlockSize = 0;
         double maxBlock = 0;
         double BFRLinks = 0;
-        int cores = 0;
 
         for (Link link: links) {
-            cores = link.getCores().size();
+            ocuppiedSlotCount = 0;
+            freeBlockSize = 0;
+            maxBlock = 0;
             for (Core core: link.getCores()) {
                 for (int i=0; i< capacity; i++){
                     if (core.getFs().get(i).isFree()){
@@ -562,7 +562,6 @@ public class Algorithms {
                 if (freeBlockSize > maxBlock ){
                     maxBlock  = freeBlockSize;
                 }
-
                 BFRLinks +=  (1 - maxBlock/(capacity-ocuppiedSlotCount));
             }
 
@@ -575,7 +574,7 @@ public class Algorithms {
         double freeBlockSize = 0;
         double maxBlock = 0;
         double BFRLinks = 0;
-        int cores = 0;
+        int cores;
 
         List<Link> links = new ArrayList<>();
         links.addAll(g.edgeSet());
