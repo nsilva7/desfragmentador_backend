@@ -68,13 +68,13 @@ public class SimuladorController {
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         List<List<GraphPath>> kspList = new ArrayList<>();
 
-        FileWriter file = new FileWriter("datos.txt");
+        FileWriter file = new FileWriter("datos.csv");
         BufferedWriter writer = new BufferedWriter(file);
         int fsRCount = 0;
         int bloquedFsRc = 0;
 
 
-        writer.write("time, entropy, path_consecutiveness, bfr, msi, demands, blocked_demands");
+        writer.write("time, entropy, path_consecutiveness, bfr, msi, demands, blocked_demands, slots, blocked_slots, ratio");
         writer.newLine();
         for (int i = 0; i < options.getTime(); i++) {
             int blockedDemand = 0;
@@ -120,9 +120,8 @@ public class SimuladorController {
                             //break;
                         }
                         //Escritura para recoleccion de datos
-                        if(!demand.getBlocked())
-                            fsRCount += demand.getFs();
-                        else
+                        fsRCount += demand.getFs();
+                        if(demand.getBlocked())
                             bloquedFsRc += demand.getFs();
                         if(establisedRoute != null || demand.getBlocked())
                             break;
@@ -154,8 +153,11 @@ public class SimuladorController {
                                 String.format(("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
                                 String.format(("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
                                 String.format(("%.6f"),Algorithms.MSI(net) )+ " , " +
-                            demands.size() + " , " +
-                            blockedDemand
+                                demands.size() + " , " +
+                                blockedDemand + " , " +
+                                fsRCount + " , " +
+                                bloquedFsRc + " , " +
+                                Math.round(100*Double.valueOf(bloquedFsRc) / Double.valueOf(fsRCount))
             );
             fsRCount = 0;
             bloquedFsRc = 0;
