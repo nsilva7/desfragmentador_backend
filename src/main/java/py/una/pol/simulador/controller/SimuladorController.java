@@ -12,6 +12,7 @@ import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.nio.Attribute;
 import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.dot.DOTExporter;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -70,11 +71,12 @@ public class SimuladorController {
 
         FileWriter file = new FileWriter("datos.csv");
         BufferedWriter writer = new BufferedWriter(file);
-        int fsRCount = 0;
-        int bloquedFsRc = 0;
+        ArrayList<Integer> slotsC = new ArrayList<>();
+        ArrayList<Integer> blockedSlots = new ArrayList<>();
+        int sumBlockedSlots = 0;
+        int sumSlots = 0;
 
-
-        writer.write("time, entropy, path_consecutiveness, bfr, msi, demands, blocked_demands, slots, blocked_slots, ratio");
+        writer.write("time, entropy, path_consecutiveness, bfr, msi, slots, blocked, sumSlots, sumBlockedSlots, ratio");
         writer.newLine();
         for (int i = 0; i < options.getTime(); i++) {
             int blockedDemand = 0;
@@ -119,10 +121,43 @@ public class SimuladorController {
                             //this.template.convertAndSend("/message",  establisedRoute);
                             //break;
                         }
-                        //Escritura para recoleccion de datos
-                        fsRCount += demand.getFs();
+
+
+                        if(slotsC.size() == 10){
+                            slotsC.remove(0);
+                            blockedSlots.remove(0);
+                        }
+                        slotsC.add(demand.getFs());
                         if(demand.getBlocked())
-                            bloquedFsRc += demand.getFs();
+                            blockedSlots.add(demand.getFs());
+                        else
+                            blockedSlots.add(0);
+
+                        int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
+
+                        sumSlots = 0;
+                        for(int k = 0; k < slotsC.size(); k++)
+                            sumSlots += slotsC.get(k);
+
+                        sumBlockedSlots = 0;
+                        for(int k = 0; k < slotsC.size(); k++)
+                            sumBlockedSlots += blockedSlots.get(k);
+                        
+
+                        writer.write(
+                                i + 1 + ", " +
+                                        String.format(("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
+                                        String.format(("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
+                                        String.format(("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
+                                        String.format(("%.6f"),Algorithms.MSI(net) )+ " , " +
+                                        demand.getFs() + " , " +
+                                        demand.isBlocked() + " , " +
+                                        sumSlots + " , " +
+                                        sumBlockedSlots + " , " +
+                                        (double)Math.round(1000*Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))/1000
+                        );
+                        writer.newLine();
+
                         if(establisedRoute != null || demand.getBlocked())
                             break;
                     }
@@ -143,25 +178,7 @@ public class SimuladorController {
             rSlots.setReleased(true);
             rSlots.setReleasedSlots(this.setTimeLife(net));
             //this.template.convertAndSend("/message", rSlots);
-            int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
 
-            //System.out.println("ESCRIBIENDO DATOS");
-            Set edges = net.edgeSet();
-            writer.write(
-                        i + 1 + ", " +
-                                String.format(("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
-                                String.format(("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
-                                String.format(("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
-                                String.format(("%.6f"),Algorithms.MSI(net) )+ " , " +
-                                demands.size() + " , " +
-                                blockedDemand + " , " +
-                                fsRCount + " , " +
-                                bloquedFsRc + " , " +
-                                Math.round(100*Double.valueOf(bloquedFsRc) / Double.valueOf(fsRCount))
-            );
-            fsRCount = 0;
-            bloquedFsRc = 0;
-            writer.newLine();
         }
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
