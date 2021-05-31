@@ -142,14 +142,14 @@ public class SimuladorController {
                         sumBlockedSlots = 0;
                         for(int k = 0; k < slotsC.size(); k++)
                             sumBlockedSlots += blockedSlots.get(k);
-                        
+
 
                         writer.write(
                                 i + 1 + ", " +
-                                        String.format(("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
-                                        String.format(("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
-                                        String.format(("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
-                                        String.format(("%.6f"),Algorithms.MSI(net) )+ " , " +
+                                        String.format(Locale.US,("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
+                                        String.format(Locale.US,("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
+                                        String.format(Locale.US,("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
+                                        String.format(Locale.US,("%.6f"),Algorithms.MSI(net) )+ " , " +
                                         demand.getFs() + " , " +
                                         demand.isBlocked() + " , " +
                                         sumSlots + " , " +
