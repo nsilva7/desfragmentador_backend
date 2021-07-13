@@ -28,16 +28,11 @@ import py.una.pol.simulador.algorithms.Algorithms;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import javax.rmi.CORBA.Util;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.lang.reflect.Type;
 import java.util.concurrent.TimeUnit;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
 
 @RestController
 public class SimuladorController {
@@ -62,25 +57,20 @@ public class SimuladorController {
 //        if(1 == 1)
 //            return ;
 
-        System.out.println("Opciones: " + options);
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
         Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
         List<List<GraphPath>> kspList = new ArrayList<>();
-
-        FileWriter file = new FileWriter("datos.csv");
+        int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
+        FileWriter file = new FileWriter("predicciones.csv");
         BufferedWriter writer = new BufferedWriter(file);
-        ArrayList<Integer> slotsC = new ArrayList<>();
-        ArrayList<Integer> blockedSlots = new ArrayList<>();
-        int sumBlockedSlots = 0;
-        int sumSlots = 0;
+        double bfr, pred;
 
-        writer.write("time, entropy, path_consecutiveness, bfr, msi, slots, blocked, sumSlots, sumBlockedSlots, ratio");
+        writer.write("Bfr, Prediccion, Error");
         writer.newLine();
         for (int i = 0; i < options.getTime(); i++) {
-            int blockedDemand = 0;
-            System.out.println("Tiempo: " + i);
+            System.out.println("Tiempo: " + (i+1));
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
                     options.getFsRangeMin(), options.getFsRangeMax(),
@@ -88,7 +78,6 @@ public class SimuladorController {
 
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
            for(Demand demand : demands){
-                ///System.out.println("DEMANDA: " + demand);
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
                 kspList.add(kspaths);
@@ -101,8 +90,6 @@ public class SimuladorController {
                         Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
                         Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
                         Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
-//                        System.out.println("----RUTA ESTABLECIDA----");
-//                        System.out.println(establisedRoute);
                         if(establisedRoute == null){
                             tested[core] = true;//Se marca el core probado
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
@@ -110,7 +97,6 @@ public class SimuladorController {
                                 System.out.println("BLOQUEO");
                                 //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
-                                blockedDemand++;
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
                             }
@@ -121,40 +107,12 @@ public class SimuladorController {
                             //this.template.convertAndSend("/message",  establisedRoute);
                             //break;
                         }
-
-
-                        if(slotsC.size() == 10){
-                            slotsC.remove(0);
-                            blockedSlots.remove(0);
-                        }
-                        slotsC.add(demand.getFs());
-                        if(demand.getBlocked())
-                            blockedSlots.add(demand.getFs());
-                        else
-                            blockedSlots.add(0);
-
-                        int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
-
-                        sumSlots = 0;
-                        for(int k = 0; k < slotsC.size(); k++)
-                            sumSlots += slotsC.get(k);
-
-                        sumBlockedSlots = 0;
-                        for(int k = 0; k < slotsC.size(); k++)
-                            sumBlockedSlots += blockedSlots.get(k);
-
-
+                        pred = Utils.getBfrIA(net, FSMinPC, options.getCapacity(), demand.isBlocked());
+                        bfr = Algorithms.BFR(net, options.getCapacity());
                         writer.write(
-                                i + 1 + ", " +
-                                        String.format(Locale.US,("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
-                                        String.format(Locale.US,("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
-                                        String.format(Locale.US,("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
-                                        String.format(Locale.US,("%.6f"),Algorithms.MSI(net) )+ " , " +
-                                        demand.getFs() + " , " +
-                                        demand.isBlocked() + " , " +
-                                        sumSlots + " , " +
-                                        sumBlockedSlots + " , " +
-                                        (double)Math.round(1000*Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))/1000
+                                        String.format(Locale.US,("%.6f"),bfr )+ " , " +
+                                        String.format(Locale.US,("%.6f"),pred )+ " , " +
+                                        String.format(Locale.US,("%.6f"),(bfr - pred) ) + " , "
                         );
                         writer.newLine();
 
@@ -248,7 +206,7 @@ public class SimuladorController {
             Graph<Integer, Link> g = new SimpleDirectedGraph<>(Link.class);
             InputStream is = ResourceReader.getFileFromResourceAsStream(fileName);
             JsonNode object = objectMapper.readTree(is);
-            
+
             for (int i = 0; i < object.get("network").size(); i++) {
                 g.addVertex(i);
 

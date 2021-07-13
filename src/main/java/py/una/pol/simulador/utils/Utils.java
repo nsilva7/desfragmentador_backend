@@ -3,8 +3,16 @@ import org.jgrapht.GraphMetrics;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import org.jgrapht.graph.GraphWalk;
+import py.una.pol.simulador.algorithms.Algorithms;
 import py.una.pol.simulador.model.Demand;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 
 import org.jgrapht.Graph;
@@ -312,5 +320,38 @@ public class Utils {
         }
 
         return uelink/graph.edgeSet().size()*cores;
+    }
+
+    public static double getBfrIA(Graph graph, int FSMinPC, int capacity, boolean blocked) throws IOException {
+        double bfr = 0;
+        String json = "{" +
+                                  "\"entropy\": " + graphEntropyCalculation(graph) +
+                                 ",\"pc\":" + Algorithms.PathConsecutiveness(twoLinksRoutes(graph), capacity, FSMinPC) +
+                                 ",\"shf\":" + Algorithms.shf(graph, capacity) +
+                                 ",\"msi\":" + Algorithms.MSI(graph) +
+                                 ",\"used\":" + Algorithms.graphUsePercentage(graph) +
+                                 ",\"blocked\":" + blocked +
+                                 "}";
+        URL url = new URL("http://127.0.0.1:5000/estimador/ratio");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("POST");
+        con.setRequestProperty("Content-type", "application/json");
+//        con.setRequestProperty("Accept", "application/json");
+        con.setDoOutput(true);
+        con.setConnectTimeout(30000);
+        try(OutputStream os = con.getOutputStream()) {
+            byte[] input = json.getBytes("utf-8");
+            os.write(input, 0, input.length);
+        }
+        try(BufferedReader br = new BufferedReader(
+                new InputStreamReader(con.getInputStream(), "utf-8"))) {
+            StringBuilder response = new StringBuilder();
+            String responseLine;
+            while ((responseLine = br.readLine()) != null) {
+                response.append(responseLine.trim());
+            }
+            bfr = Double.parseDouble(response.toString());
+        }
+        return bfr;
     }
 }
