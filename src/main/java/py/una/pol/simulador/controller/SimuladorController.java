@@ -2,40 +2,26 @@ package py.una.pol.simulador.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.javafx.geom.Edge;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
 import org.jgrapht.graph.SimpleDirectedGraph;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
-import org.jgrapht.nio.Attribute;
-import org.jgrapht.nio.DefaultAttribute;
-import org.jgrapht.nio.dot.DOTExporter;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import py.una.pol.simulador.model.*;
 import py.una.pol.simulador.utils.ResourceReader;
 import py.una.pol.simulador.utils.Utils;
 import py.una.pol.simulador.algorithms.Algorithms;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.lang.reflect.Type;
-import java.util.concurrent.TimeUnit;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
@@ -66,7 +52,7 @@ public class SimuladorController {
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
-        Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
+        Graph net = null;
         List<List<GraphPath>> kspList = new ArrayList<>();
 
         FileWriter file = new FileWriter("datos.csv");
@@ -75,111 +61,190 @@ public class SimuladorController {
         ArrayList<Integer> blockedSlots = new ArrayList<>();
         int sumBlockedSlots = 0;
         int sumSlots = 0;
-
-        writer.write("time, entropy, path_consecutiveness, bfr, msi, slots, blocked, sumSlots, sumBlockedSlots, ratio");
+        int ccount = 0;
+        int puntocerocount = 0;
+        int puntounocount = 0;
+        int puntodoscount = 0;
+        int puntotrescount = 0;
+        int puntocuatrocount = 0;
+        int puntocincoocount = 0;
+        int puntoseiscount = 0;
+        int puntosietecount = 0;
+        int puntoochocount = 0;
+        writer.write("entropy, pc, bfr, shf, msi, used, blocked, ratio");
         writer.newLine();
-        for (int i = 0; i < options.getTime(); i++) {
-            int blockedDemand = 0;
-            System.out.println("Tiempo: " + i);
-            demands = Utils.generateDemands(
-                    options.getLambda(), options.getTime(),
-                    options.getFsRangeMin(), options.getFsRangeMax(),
-                    net.vertexSet().size(), options.getErlang() / options.getLambda());
 
-            KShortestSimplePaths ksp = new KShortestSimplePaths(net);
-           for(Demand demand : demands){
-                ///System.out.println("DEMANDA: " + demand);
-                //k caminos más cortos entre source y destination de la demanda actual
-                List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
-                kspList.add(kspaths);
-                try {
-                    boolean [] tested = new boolean[4];
-                    Arrays.fill(tested, false);
-                    int core;
-                    while (true){
-                        core = getCore(options.getCores(), tested);
-                        Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
-                        Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
-                        Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
-//                        System.out.println("----RUTA ESTABLECIDA----");
-//                        System.out.println(establisedRoute);
-                        if(establisedRoute == null){
-                            tested[core] = true;//Se marca el core probado
-                            if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
-                                //Bloqueo
-                                System.out.println("BLOQUEO");
-                                //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
-                                demand.setBlocked(true);
-                                blockedDemand++;
-                                //this.template.convertAndSend("/message",  demand);
-                                //break;
+        String[] topologies = {"eunet.json", "nsfnet.json", "usnet.json"};
+
+        for(int top = 0; top < topologies.length; top++){
+            System.out.println("---TOPOLOGÍA: " +  topologies[top] + "---");
+            for(int cc = 0; cc < 20; cc++){
+                System.out.println("--CC: " + cc);
+                for(int er = 400; er <= 1000; er = er + 100 ){
+                    System.out.println("Erlangs: " +  er);
+                    net = createTopology2(topologies[top], options.getCores(), options.getFsWidth(), options.getCapacity());
+                    options.setErlang(er);
+                    for (int i = 0; i <= options.getTime(); i++) {
+                        int blockedDemand = 0;
+                        if(i%100 == 0)
+                            System.out.println("Tiempo: " + i);
+                        demands = Utils.generateDemands(
+                                options.getLambda(), options.getTime(),
+                                options.getFsRangeMin(), options.getFsRangeMax(),
+                                net.vertexSet().size(), options.getErlang() / options.getLambda());
+
+                        KShortestSimplePaths ksp = new KShortestSimplePaths(net);
+                        for(Demand demand : demands){
+                            ///System.out.println("DEMANDA: " + demand);
+                            //k caminos más cortos entre source y destination de la demanda actual
+                            List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
+                            kspList.add(kspaths);
+                            try {
+                                boolean [] tested = new boolean[4];
+                                Arrays.fill(tested, false);
+                                int core;
+                                while (true){
+                                    core = getCore(options.getCores(), tested);
+                                    Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
+                                    Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
+                                    Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
+    //                        System.out.println("----RUTA ESTABLECIDA----");
+    //                        System.out.println(establisedRoute);
+                                    if(establisedRoute == null){
+                                        tested[core] = true;//Se marca el core probado
+                                        if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
+                                            //Bloqueo
+                                            //System.out.println("BLOQUEO");
+                                            //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                            demand.setBlocked(true);
+                                            blockedDemand++;
+                                            //this.template.convertAndSend("/message",  demand);
+                                            //break;
+                                        }
+                                    }else{
+                                        //Ruta establecida
+                                        establishedRoutes.add((EstablisedRoute) establisedRoute);
+                                        Utils.assignFs((EstablisedRoute)establisedRoute, core);
+                                        //this.template.convertAndSend("/message",  establisedRoute);
+                                        //break;
+                                    }
+
+
+                                    if(slotsC.size() == 10){
+                                        slotsC.remove(0);
+                                        blockedSlots.remove(0);
+                                    }
+                                    slotsC.add(demand.getFs());
+                                    if(demand.getBlocked())
+                                        blockedSlots.add(demand.getFs());
+                                    else
+                                        blockedSlots.add(0);
+
+                                    int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
+
+                                    sumSlots = 0;
+                                    for(int k = 0; k < slotsC.size(); k++)
+                                        sumSlots += slotsC.get(k);
+
+                                    sumBlockedSlots = 0;
+                                    for(int k = 0; k < slotsC.size(); k++)
+                                        sumBlockedSlots += blockedSlots.get(k);
+
+                                    boolean j = false;
+                                    if(cc < 1 || (Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))  > 0 ) {
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) == 0){
+                                            ccount++;
+                                            if(ccount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) > 0 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.1){
+                                            puntocerocount++;
+                                            if(puntocerocount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.1 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.2){
+                                            puntounocount++;
+                                            if(puntounocount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.2 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.3){
+                                            puntodoscount++;
+                                            if(puntodoscount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.3 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.4){
+                                            puntotrescount++;
+                                            if(puntotrescount >= 10000)
+                                                j = true;
+
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.4 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.5){
+                                            puntocuatrocount++;
+                                            if(puntocuatrocount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.5 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.6){
+                                            puntocincoocount++;
+                                            if(puntocincoocount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.6 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.7){
+                                            puntoseiscount++;
+                                            if(puntoseiscount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.7 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.8){
+                                            puntosietecount++;
+                                            if(puntosietecount >= 10000)
+                                                j = true;
+                                        }
+                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.8 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.9){
+                                            puntoochocount++;
+                                            if(puntoochocount >= 10000)
+                                                j = true;
+                                        }
+
+                                        if(!j) {
+                                            writer.write(
+                                                    String.format(Locale.US, ("%.6f"), Utils.graphEntropyCalculation(net)) + ", " +
+                                                            String.format(Locale.US, ("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC)) + " , " +
+                                                            String.format(Locale.US, ("%.6f"), Algorithms.BFR(net, options.getCapacity())) + " , " +
+                                                            String.format(Locale.US, ("%.6f"), Algorithms.shf(net, options.getCapacity())) + " , " +
+                                                            String.format(Locale.US, ("%.6f"), Algorithms.MSI(net)) + " , " +
+                                                            String.format(Locale.US, ("%.6f"), Algorithms.graphUsePercentage(net)) + " , " +
+                                                            (demand.isBlocked() ? 1 : 0) + " , " +
+                                                            String.format(Locale.US, ("%.2f"), Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))
+                                            );
+                                            writer.newLine();
+                                        }
+                                    }
+
+                                    if(establisedRoute != null || demand.getBlocked())
+                                        break;
+                                }
+                            }catch (java.lang.Exception e){
+                                e.printStackTrace();
                             }
-                        }else{
-                            //Ruta establecida
-                            establishedRoutes.add((EstablisedRoute) establisedRoute);
-                            Utils.assignFs((EstablisedRoute)establisedRoute, core);
-                            //this.template.convertAndSend("/message",  establisedRoute);
-                            //break;
+                            try {
+                                //wait = 1000/demands.size();
+                                //TimeUnit.MILLISECONDS.sleep(wait);
+                                //Object.wait (wait);
+                            }catch (java.lang.Exception e){
+                                e.printStackTrace();
+                            }
                         }
 
+                        ReleasedSlots rSlots = new ReleasedSlots();
+                        rSlots.setTime(i + 2);
+                        rSlots.setReleased(true);
+                        rSlots.setReleasedSlots(this.setTimeLife(net));
+                        //this.template.convertAndSend("/message", rSlots);
 
-                        if(slotsC.size() == 10){
-                            slotsC.remove(0);
-                            blockedSlots.remove(0);
-                        }
-                        slotsC.add(demand.getFs());
-                        if(demand.getBlocked())
-                            blockedSlots.add(demand.getFs());
-                        else
-                            blockedSlots.add(0);
-
-                        int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
-
-                        sumSlots = 0;
-                        for(int k = 0; k < slotsC.size(); k++)
-                            sumSlots += slotsC.get(k);
-
-                        sumBlockedSlots = 0;
-                        for(int k = 0; k < slotsC.size(); k++)
-                            sumBlockedSlots += blockedSlots.get(k);
-
-
-                        writer.write(
-                                i + 1 + ", " +
-                                        String.format(Locale.US,("%.6f"),Utils.graphEntropyCalculation(net)) + ", " +
-                                        String.format(Locale.US,("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC) )+  " , " +
-                                        String.format(Locale.US,("%.6f"),Algorithms.BFR(net, options.getCapacity()) )+ " , " +
-                                        String.format(Locale.US,("%.6f"),Algorithms.MSI(net) )+ " , " +
-                                        demand.getFs() + " , " +
-                                        demand.isBlocked() + " , " +
-                                        sumSlots + " , " +
-                                        sumBlockedSlots + " , " +
-                                        (double)Math.round(1000*Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))/1000
-                        );
-                        writer.newLine();
-
-                        if(establisedRoute != null || demand.getBlocked())
-                            break;
                     }
-                }catch (java.lang.Exception e){
-                    e.printStackTrace();
-                }
-                try {
-                    //wait = 1000/demands.size();
-                    //TimeUnit.MILLISECONDS.sleep(wait);
-                    //Object.wait (wait);
-                }catch (java.lang.Exception e){
-                    e.printStackTrace();
                 }
             }
-
-            ReleasedSlots rSlots = new ReleasedSlots();
-            rSlots.setTime(i + 2);
-            rSlots.setReleased(true);
-            rSlots.setReleasedSlots(this.setTimeLife(net));
-            //this.template.convertAndSend("/message", rSlots);
-
         }
+
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
