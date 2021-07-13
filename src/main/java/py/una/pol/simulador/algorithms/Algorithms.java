@@ -710,5 +710,122 @@ public class Algorithms {
         }
     }
 
+    public static double graphUsePercentage(Graph graph){
+        double total = 0;
+        double occup = 0;
+        List<Link> links = new ArrayList<>();
+        links.addAll(graph.edgeSet());
+        for (Link link: links) {
+            for (Core core: link.getCores()) {
+                for(int i = 0; i < core.getFs().size(); i++){
+                    if(!core.getFs().get(i).isFree())
+                        occup++;
+                    total++;
+                }
+            }
+        }
+
+        return occup / total ;
+    }
+
+    public static double entropyPerUse(Graph graph, List<EstablisedRoute> establishedRoutes, int capacity){
+        List<FrecuencySlot> fs;
+        double uelink=0;
+        int ueCount;
+        int countLinks = 0;
+        int occup = 0;
+        double used = 0;
+        double total = 0;
+        double entropy;
+        for (EstablisedRoute route : establishedRoutes){
+            for(Link link : route.getPath()){
+                ueCount = 0;
+                for(Core core : link.getCores()){
+                    fs = core.getFs();
+                    for (int i = 0; i < fs.size() - 1 ; i++) {
+                        if(fs.get(i).isFree() != fs.get(i+1).isFree()){
+                            ueCount++;
+                        }
+                        if(!fs.get(i).isFree())
+                            occup++;
+                    }
+                }
+                uelink += ueCount;
+                countLinks++;
+            }
+
+            entropy = uelink / countLinks;
+            used = occup / capacity;
+            total += (entropy*used);
+
+        }
+
+        return total / establishedRoutes.size();
+
+    }
+
+    public static double externalFragmentation(Graph graph, int capacity){
+        double ef = 0;
+        int blocksFreeC;
+        int maxBlockFree;
+        int currentBlockFree;
+        List<Link> links = new ArrayList<>();
+        links.addAll(graph.edgeSet());
+        for(Link link : links){
+            for(Core core : link.getCores()){
+                maxBlockFree = 0;
+                blocksFreeC = 0;
+                currentBlockFree = 0;
+                for(FrecuencySlot fs : core.getFs()){
+                    if(fs.isFree()){
+                        //if(currentBlockFree == 0)
+                        blocksFreeC++;//Contador global de slots libre
+                        currentBlockFree++;//Contador slots libre del bloque actual
+                    }else{
+                        if(currentBlockFree > maxBlockFree)
+                            maxBlockFree = currentBlockFree;
+                        currentBlockFree = 0;
+                    }
+                }
+                if(maxBlockFree == 0 && currentBlockFree == capacity)//Para el caso en el que todo el espectro esta libre
+                    maxBlockFree = capacity;
+
+                if(maxBlockFree == 0 && blocksFreeC == 0)//Para el caso en el que todo el espectro esta ocupado
+                    blocksFreeC = 1;
+
+                if(maxBlockFree == 0 && currentBlockFree != capacity && currentBlockFree != 0)//Para el caso en el que solo se encuentra 1 bloque libre
+                    maxBlockFree = currentBlockFree;
+
+                ef += 1 - ((double)maxBlockFree / (double)blocksFreeC);
+            }
+        }
+
+        return ef / (links.size() * links.get(0).getCores().size());
+    }
+
+    public static double shf(Graph graph, int capacity){
+        double shf = 0;
+        double sf = 0;
+        List<Link> links = new ArrayList<>();
+        links.addAll(graph.edgeSet());
+        for(Link link : links) {
+            for (Core core : link.getCores()) {
+                sf = 0;
+                for (FrecuencySlot fs : core.getFs()){
+                    if(fs.isFree())
+                        sf++;
+                    else {
+                        if(sf != 0)  //hasta 1   *  [0, 5.86]
+                            shf += ((sf / capacity) * Math.log(capacity / sf));
+                        sf = 0;
+                    }
+                }
+                sf = sf;
+                if(sf != 0)
+                  shf += ((sf / capacity) * Math.log(capacity / sf));
+            }
+        }
+        return shf / links.size() * links.get(0).getCores().size();
+    }
 
 }
