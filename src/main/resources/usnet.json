@@ -91,6 +91,10 @@
     {
       "connections": [23],
       "distance": [900]
+    },
+    {
+      "connections": [],
+      "distance": []
     }
   ]
 }
