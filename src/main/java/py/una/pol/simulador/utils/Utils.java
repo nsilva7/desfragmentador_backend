@@ -19,6 +19,7 @@ import org.jgrapht.Graph;
 import py.una.pol.simulador.model.EstablisedRoute;
 import py.una.pol.simulador.model.FrecuencySlot;
 import py.una.pol.simulador.model.Link;
+import py.una.pol.simulador.socket.SocketClient;
 
 public class Utils {
 
@@ -322,17 +323,17 @@ public class Utils {
         return uelink/graph.edgeSet().size()*cores;
     }
 
-    public static double getBfrIA(Graph graph, int FSMinPC, int capacity, boolean blocked) throws IOException {
+    public static double getBfrIA(Graph graph, int FSMinPC, int capacity, boolean blocked, SocketClient client) throws IOException {
         double bfr = 0;
         String json = "{" +
-                                  "\"entropy\": " + graphEntropyCalculation(graph) +
-                                 ",\"pc\":" + Algorithms.PathConsecutiveness(twoLinksRoutes(graph), capacity, FSMinPC) +
-                                 ",\"shf\":" + Algorithms.shf(graph, capacity) +
-                                 ",\"msi\":" + Algorithms.MSI(graph) +
-                                 ",\"used\":" + Algorithms.graphUsePercentage(graph) +
+                                  "\"entropy\": " + String.format(Locale.US,("%.6f"),graphEntropyCalculation(graph)) +
+                                 ",\"pc\":" + String.format(Locale.US,("%.6f"),Algorithms.PathConsecutiveness(twoLinksRoutes(graph), capacity, FSMinPC) )+
+                                 ",\"shf\":" + String.format(Locale.US,("%.6f"),Algorithms.shf(graph, capacity)) +
+                                 ",\"msi\":" + String.format(Locale.US,("%.6f"),Algorithms.MSI(graph)) +
+                                 ",\"used\":" + String.format(Locale.US,("%.6f"),Algorithms.graphUsePercentage(graph)) +
                                  ",\"blocked\":" + blocked +
                                  "}";
-        URL url = new URL("http://127.0.0.1:5000/estimador/ratio");
+        /*URL url = new URL("http://127.0.0.1:5000/estimador/ratio");
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-type", "application/json");
@@ -351,7 +352,11 @@ public class Utils {
                 response.append(responseLine.trim());
             }
             bfr = Double.parseDouble(response.toString());
-        }
+        }*/
+
+        String response = client.sendMessage(json);
+        bfr = Double.parseDouble(response);
+
         return bfr;
     }
 }

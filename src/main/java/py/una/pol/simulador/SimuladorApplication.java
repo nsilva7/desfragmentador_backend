@@ -10,8 +10,10 @@ import org.jgrapht.nio.dot.DOTExporter;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import py.una.pol.simulador.model.Core;
 import py.una.pol.simulador.model.Link;
+import py.una.pol.simulador.socket.SocketClient;
 
 import java.io.*;
 import java.util.*;
@@ -23,9 +25,13 @@ public class SimuladorApplication {
 
 		SpringApplication.run(SimuladorApplication.class, args);
 
+
 	}
 
-
+	@Bean
+	public SocketClient socketClient() {
+		return new SocketClient();
+	}
 
 	private static InputStream getFileFromResourceAsStream(String fileName) {
 

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import py.una.pol.simulador.model.*;
+import py.una.pol.simulador.socket.SocketClient;
 import py.una.pol.simulador.utils.ResourceReader;
 import py.una.pol.simulador.utils.Utils;
 import py.una.pol.simulador.algorithms.Algorithms;
@@ -44,6 +45,9 @@ public class SimuladorController {
     }
 
 
+    @Autowired
+    SocketClient socketClient;
+
 //    @CrossOrigin(origins = "http://localhost:4300")
 //    @PostMapping("/simular")
     @MessageMapping("/simular")
@@ -56,7 +60,7 @@ public class SimuladorController {
 //        pruebas();
 //        if(1 == 1)
 //            return ;
-
+        socketClient.startConnection("127.0.0.1",9999);
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
@@ -107,7 +111,7 @@ public class SimuladorController {
                             //this.template.convertAndSend("/message",  establisedRoute);
                             //break;
                         }
-                        pred = Utils.getBfrIA(net, FSMinPC, options.getCapacity(), demand.isBlocked());
+                        pred = Utils.getBfrIA(net, FSMinPC, options.getCapacity(), demand.isBlocked(), socketClient);
                         bfr = Algorithms.BFR(net, options.getCapacity());
                         writer.write(
                                         String.format(Locale.US,("%.6f"),bfr )+ " , " +
@@ -141,6 +145,7 @@ public class SimuladorController {
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
+        socketClient.stopConnection();
         System.out.println("Fin Simulación");
         writer.close();
     }
