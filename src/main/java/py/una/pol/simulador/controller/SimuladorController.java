@@ -25,6 +25,8 @@ import java.util.*;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 
+import static java.lang.Double.NaN;
+
 @RestController
 public class SimuladorController {
     private final SimpMessagingTemplate template;
@@ -59,44 +61,50 @@ public class SimuladorController {
         BufferedWriter writer = new BufferedWriter(file);
         ArrayList<Integer> slotsC = new ArrayList<>();
         ArrayList<Integer> blockedSlots = new ArrayList<>();
-        int sumBlockedSlots = 0;
-        int sumSlots = 0;
-        int ccount = 0;
-        int puntocerocount = 0;
-        int puntounocount = 0;
-        int puntodoscount = 0;
-        int puntotrescount = 0;
-        int puntocuatrocount = 0;
-        int puntocincoocount = 0;
-        int puntoseiscount = 0;
-        int puntosietecount = 0;
-        int puntoochocount = 0;
-        writer.write("entropy, pc, bfr, shf, msi, used, blocked, ratio");
+        int sumSlots = 0, sumBlockedSlots = 0;
+
+        writer.write("entropy, pc, bfr, shf, msi, used, demandsq, blocked, bbp");
         writer.newLine();
 
         String[] topologies = {"eunet.json", "nsfnet.json", "usnet.json"};
+
+        int Tc = 20;
+        int Tmin = 8;
+        double Bth = 0.015;
+        double Bdt = 0;
+
+        int cerocount = 0, cerocerocount = 0, unocount = 0, doscount = 0, trescount = 0, cuatrocount = 0, cincocount = 0;
+        int seiscount = 0, sietecount = 0, ochocount = 0, nuevecount = 0, unounocount = 0;
+        int demandsBlocked = 0;
+        int slotsCount = 0;
+        int blockedSlotsCount = 0;
+        int cantidadDemandas = 0;
 
         for(int top = 0; top < topologies.length; top++){
             System.out.println("---TOPOLOGÍA: " +  topologies[top] + "---");
             for(int cc = 0; cc < 20; cc++){
                 System.out.println("--CC: " + cc);
-                for(int er = 400; er <= 1000; er = er + 100 ){
+                for(int er = 400; er <= 1500; er = er + 100 ){
                     System.out.println("Erlangs: " +  er);
                     net = createTopology2(topologies[top], options.getCores(), options.getFsWidth(), options.getCapacity());
                     options.setErlang(er);
-                    for (int i = 0; i <= options.getTime(); i++) {
-                        int blockedDemand = 0;
-                        if(i%100 == 0)
-                            System.out.println("Tiempo: " + i);
+                    int k = 0, j = 1, dt = 0, wtk = Tmin, tnext = 1 + wtk, wtka = 0, U1  = 0, U0 = 0, Tk = 0, Tka = 0;
+                    double U = 0, Ua = 0, Uaa = 0, Bk = 0, Rbk = 0, Bka = 0, Abk = 0, Rbka = 0;
+                    for (int t = 1; t <= options.getTime(); t++) {
+                        slotsCount = 0;
+                        blockedSlotsCount = 0;
+                        demandsBlocked = 0;
+                        dt++;
+                        if(t%100 == 0)
+                            System.out.println("Tiempo: " + t);
                         demands = Utils.generateDemands(
                                 options.getLambda(), options.getTime(),
                                 options.getFsRangeMin(), options.getFsRangeMax(),
                                 net.vertexSet().size(), options.getErlang() / options.getLambda());
 
+                        cantidadDemandas = demands.size();
                         KShortestSimplePaths ksp = new KShortestSimplePaths(net);
                         for(Demand demand : demands){
-                            ///System.out.println("DEMANDA: " + demand);
-                            //k caminos más cortos entre source y destination de la demanda actual
                             List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
                             kspList.add(kspaths);
                             try {
@@ -105,118 +113,24 @@ public class SimuladorController {
                                 int core;
                                 while (true){
                                     core = getCore(options.getCores(), tested);
+                                    t = t;
                                     Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
                                     Method method = Algorithms.class.getMethod(options.getRoutingAlg(), paramTypes);
                                     Object establisedRoute = method.invoke(this, net, kspaths, demand, options.getCapacity(), core);
-    //                        System.out.println("----RUTA ESTABLECIDA----");
-    //                        System.out.println(establisedRoute);
                                     if(establisedRoute == null){
                                         tested[core] = true;//Se marca el core probado
                                         if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
-                                            //Bloqueo
-                                            //System.out.println("BLOQUEO");
-                                            //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                             demand.setBlocked(true);
-                                            blockedDemand++;
-                                            //this.template.convertAndSend("/message",  demand);
-                                            //break;
                                         }
                                     }else{
                                         //Ruta establecida
                                         establishedRoutes.add((EstablisedRoute) establisedRoute);
                                         Utils.assignFs((EstablisedRoute)establisedRoute, core);
-                                        //this.template.convertAndSend("/message",  establisedRoute);
-                                        //break;
                                     }
-
-
-                                    if(slotsC.size() == 10){
-                                        slotsC.remove(0);
-                                        blockedSlots.remove(0);
-                                    }
-                                    slotsC.add(demand.getFs());
-                                    if(demand.getBlocked())
-                                        blockedSlots.add(demand.getFs());
-                                    else
-                                        blockedSlots.add(0);
-
-                                    int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
-
-                                    sumSlots = 0;
-                                    for(int k = 0; k < slotsC.size(); k++)
-                                        sumSlots += slotsC.get(k);
-
-                                    sumBlockedSlots = 0;
-                                    for(int k = 0; k < slotsC.size(); k++)
-                                        sumBlockedSlots += blockedSlots.get(k);
-
-                                    boolean j = false;
-                                    if(cc < 1 || (Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))  > 0 ) {
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) == 0){
-                                            ccount++;
-                                            if(ccount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) > 0 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.1){
-                                            puntocerocount++;
-                                            if(puntocerocount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.1 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.2){
-                                            puntounocount++;
-                                            if(puntounocount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.2 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.3){
-                                            puntodoscount++;
-                                            if(puntodoscount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.3 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.4){
-                                            puntotrescount++;
-                                            if(puntotrescount >= 10000)
-                                                j = true;
-
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.4 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.5){
-                                            puntocuatrocount++;
-                                            if(puntocuatrocount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.5 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.6){
-                                            puntocincoocount++;
-                                            if(puntocincoocount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.6 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.7){
-                                            puntoseiscount++;
-                                            if(puntoseiscount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.7 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.8){
-                                            puntosietecount++;
-                                            if(puntosietecount >= 10000)
-                                                j = true;
-                                        }
-                                        if(Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) >= 0.8 && Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots) < 0.9){
-                                            puntoochocount++;
-                                            if(puntoochocount >= 10000)
-                                                j = true;
-                                        }
-
-                                        if(!j) {
-                                            writer.write(
-                                                    String.format(Locale.US, ("%.6f"), Utils.graphEntropyCalculation(net)) + ", " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC)) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.BFR(net, options.getCapacity())) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.shf(net, options.getCapacity())) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.MSI(net)) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.graphUsePercentage(net)) + " , " +
-                                                            (demand.isBlocked() ? 1 : 0) + " , " +
-                                                            String.format(Locale.US, ("%.2f"), Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))
-                                            );
-                                            writer.newLine();
-                                        }
+                                    slotsCount += demand.getFs();
+                                    if(demand.isBlocked()){
+                                        demandsBlocked++;
+                                        blockedSlotsCount += demand.getFs();
                                     }
 
                                     if(establisedRoute != null || demand.getBlocked())
@@ -235,10 +149,155 @@ public class SimuladorController {
                         }
 
                         ReleasedSlots rSlots = new ReleasedSlots();
-                        rSlots.setTime(i + 2);
+                        rSlots.setTime(t + 2);
                         rSlots.setReleased(true);
                         rSlots.setReleasedSlots(this.setTimeLife(net));
                         //this.template.convertAndSend("/message", rSlots);
+
+                        //Calculo BBP//
+                        slotsC.add(slotsCount);//Guardamos la cantidad de slots de las demandas
+                        blockedSlots.add(blockedSlotsCount);//Guardamos la cantidad de slots que se bloquearon
+
+                        if(t == j*Tc){//Si t = al tiempo minimo entre df
+                            U = Algorithms.graphUsePercentage(net);//%uso de red
+                            if(U > Ua && Ua < Uaa){//Se resetean valores
+                                dt = 0;
+                                k = 0;
+                                j = 1;
+                                wtk = Tmin;
+                                Ua = 0;
+                                Uaa = 0;
+                                tnext = t + wtk;
+                            }else{
+                                Uaa = Ua;
+                                Ua = U;
+                                j++;
+                            }
+                        }
+                        if(t == tnext){
+                            //Calcular BBP(Dt)
+                            if(dt == 0)
+                                dt = 1;
+                            if(dt <= blockedSlots.size()){//Solo si el dt a las demandas que tenemos guardadas
+                                sumSlots = 0;
+                                sumBlockedSlots = 0;
+                                for (int tt = 0; tt < dt; tt++){
+                                    sumSlots += slotsC.get(slotsC.size() - 1 - tt);
+                                    sumBlockedSlots += blockedSlots.get(blockedSlots.size() - 1 - tt);
+                                }
+                                Bdt = (double)sumBlockedSlots / (double)sumSlots;
+
+                                Boolean write = true;
+
+                                if(Bdt == 0) {
+                                    cerocount++;
+                                    if(cerocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0 && Bdt < 0.1){
+                                    cerocerocount++;
+                                    if(cerocerocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.1 && Bdt < 0.2){
+                                    unocount++;
+                                    if(unocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.2 && Bdt < 0.3){
+                                    doscount++;
+                                    if(doscount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.3 && Bdt < 0.4){
+                                    trescount++;
+                                    if(trescount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.5 && Bdt < 0.6){
+                                    cuatrocount++;
+                                    if(cuatrocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.6 && Bdt < 0.7){
+                                    seiscount++;
+                                    if(seiscount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.6 && Bdt < 0.7){
+                                    sietecount++;
+                                    if(sietecount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.7 && Bdt < 0.8){
+                                    ochocount++;
+                                    if(ochocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.8 && Bdt < 0.9){
+                                    ochocount++;
+                                    if(cincocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if(Bdt > 0.9 && Bdt < 1){
+                                    nuevecount++;
+                                    if(nuevecount >= 10000){
+                                        write = false;
+                                    }
+                                }
+                                if( Bdt == 1){
+                                    unounocount++;
+                                    if(unounocount >= 10000){
+                                        write = false;
+                                    }
+                                }
+
+                                if(write){
+                                    int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMax()) * 0.3 ));
+                                    writer.write(
+                                            String.format(Locale.US, ("%.6f"), Utils.graphEntropyCalculation(net)) + ", " +
+                                                    String.format(Locale.US, ("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC)) + " , " +
+                                                    String.format(Locale.US, ("%.6f"), Algorithms.BFR(net, options.getCapacity())) + " , " +
+                                                    String.format(Locale.US, ("%.6f"), Algorithms.shf(net, options.getCapacity())) + " , " +
+                                                    String.format(Locale.US, ("%.6f"), Algorithms.MSI(net)) + " , " +
+                                                    String.format(Locale.US, ("%.6f"), Algorithms.graphUsePercentage(net)) + " , " +
+                                                    cantidadDemandas + " , " +
+                                                    demandsBlocked + " , " +
+                                                    String.format(Locale.US, ("%.2f"), Bdt)
+                                    );
+                                    writer.newLine();
+                                }
+                                if(Bdt >= Bth){
+                                    //"Desfragmentar"
+                                    Tka = Tk;
+                                    Tk = dt;
+                                    Bk = Bdt;
+                                    Rbka = Rbk;
+                                    Rbk = (2*(Bk * Bka)) / (Tk + Tka);
+                                    Abk = Rbk - Rbka;
+                                    k++;
+                                    if(Abk > 0) {
+                                        wtk += 2;
+                                    }else{
+                                        wtk -= 2;
+                                    }
+                                    tnext = t + wtk;
+                                    dt = 0;
+                                }else{
+                                    tnext++;
+                                }
+                            }
+                        }
 
                     }
                 }
