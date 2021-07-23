@@ -71,7 +71,7 @@ public class SimuladorController {
         int puntoseiscount = 0;
         int puntosietecount = 0;
         int puntoochocount = 0;
-        writer.write("entropy, pc, bfr, shf, msi, used, blocked, ratio");
+        writer.write("time,entropy,pc,bfr,shf,msi,used,demands,blocked");
         writer.newLine();
 
         String[] topologies = {"eunet.json", "nsfnet.json", "usnet.json"};
@@ -140,8 +140,6 @@ public class SimuladorController {
                                     else
                                         blockedSlots.add(0);
 
-                                    int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
-
                                     sumSlots = 0;
                                     for(int k = 0; k < slotsC.size(); k++)
                                         sumSlots += slotsC.get(k);
@@ -205,17 +203,7 @@ public class SimuladorController {
                                         }
 
                                         if(!j) {
-                                            writer.write(
-                                                    String.format(Locale.US, ("%.6f"), Utils.graphEntropyCalculation(net)) + ", " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC)) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.BFR(net, options.getCapacity())) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.shf(net, options.getCapacity())) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.MSI(net)) + " , " +
-                                                            String.format(Locale.US, ("%.6f"), Algorithms.graphUsePercentage(net)) + " , " +
-                                                            (demand.isBlocked() ? 1 : 0) + " , " +
-                                                            String.format(Locale.US, ("%.2f"), Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))
-                                            );
-                                            writer.newLine();
+
                                         }
                                     }
 
@@ -239,6 +227,21 @@ public class SimuladorController {
                         rSlots.setReleased(true);
                         rSlots.setReleasedSlots(this.setTimeLife(net));
                         //this.template.convertAndSend("/message", rSlots);
+                        int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
+
+                        writer.write(
+                                    i + ", " +
+                                        String.format(Locale.US, ("%.6f"), Utils.graphEntropyCalculation(net)) + ", " +
+                                        String.format(Locale.US, ("%.6f"), Algorithms.PathConsecutiveness(Utils.twoLinksRoutes(net), options.getCapacity(), FSMinPC)) + " , " +
+                                        String.format(Locale.US, ("%.6f"), Algorithms.BFR(net, options.getCapacity())) + " , " +
+                                        String.format(Locale.US, ("%.6f"), Algorithms.shf(net, options.getCapacity())) + " , " +
+                                        String.format(Locale.US, ("%.6f"), Algorithms.MSI(net)) + " , " +
+                                        String.format(Locale.US, ("%.6f"), Algorithms.graphUsePercentage(net)) + " , " +
+                                            sumSlots + " , " +
+                                            sumBlockedSlots
+                                        //String.format(Locale.US, ("%.2f"), Double.valueOf(sumBlockedSlots) / Double.valueOf(sumSlots))
+                        );
+                        writer.newLine();
 
                     }
                 }
