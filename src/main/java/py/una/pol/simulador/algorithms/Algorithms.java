@@ -419,11 +419,12 @@ public class Algorithms {
                 optimalSelectedRoutes.addAll(selectedRoutes);
                 bestGraph = (Graph) ((AbstractBaseGraph)graphAux).clone();
                 //bestGraph = objectMapper.readValue(objectMapper.writeValueAsString(graphAux), Graph.class);
+                betterRoutesQ = optimalSelectedRoutes.size();
                 success = true;
                 for(int index : usedIndexes){
                     pheromones[index] += currentImprovement/100;
                 }
-                //break;
+                break;
             }
 
             //Evaporar feromonas
