@@ -1,25 +1,23 @@
 package py.una.pol.simulador.utils;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.jgrapht.GraphMetrics;
 import org.jgrapht.GraphPath;
 import org.jgrapht.alg.shortestpath.KShortestSimplePaths;
+import org.jgrapht.graph.AbstractBaseGraph;
 import org.jgrapht.graph.GraphWalk;
+import org.jgrapht.graph.SimpleWeightedGraph;
 import py.una.pol.simulador.algorithms.Algorithms;
-import py.una.pol.simulador.model.Demand;
+import py.una.pol.simulador.model.*;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
 import org.jgrapht.Graph;
-import py.una.pol.simulador.model.EstablisedRoute;
-import py.una.pol.simulador.model.FrecuencySlot;
-import py.una.pol.simulador.model.Link;
 import py.una.pol.simulador.socket.SocketClient;
+import sun.security.provider.certpath.Vertex;
 
 public class Utils {
 
@@ -323,17 +321,25 @@ public class Utils {
         return uelink/graph.edgeSet().size()*cores;
     }
 
-    public static double getBfrIA(Graph graph, int FSMinPC, int capacity, boolean blocked, SocketClient client) throws IOException {
-        double bfr = 0;
+    public static double getPredIA(Graph graph, int FSMinPC, int capacity, int slotsBlocked, SocketClient client, BufferedWriter writer, Boolean blocked) throws IOException {
+        double pred;
+        double entropy = graphEntropyCalculation(graph);
+        double pc = Algorithms.PathConsecutiveness(twoLinksRoutes(graph), capacity, FSMinPC);
+        double bfr = Algorithms.BFR(graph, capacity);
+        double shf = Algorithms.shf(graph, capacity);
+        double msi = Algorithms.MSI(graph);
+        double used = Algorithms.graphUsePercentage(graph);
+
         String json = "{" +
-                                  "\"entropy\": " + String.format(Locale.US,("%.6f"),graphEntropyCalculation(graph)) +
-                                 ",\"pc\":" + String.format(Locale.US,("%.6f"),Algorithms.PathConsecutiveness(twoLinksRoutes(graph), capacity, FSMinPC) )+
-                                 ",\"shf\":" + String.format(Locale.US,("%.6f"),Algorithms.shf(graph, capacity)) +
-                                 ",\"msi\":" + String.format(Locale.US,("%.6f"),Algorithms.MSI(graph)) +
-                                 ",\"used\":" + String.format(Locale.US,("%.6f"),Algorithms.graphUsePercentage(graph)) +
-                                 ",\"blocked\":" + blocked +
+                                  "\"entropy\": " + String.format(Locale.US,("%.6f"), entropy) +
+                                 ",\"pc\":" + String.format(Locale.US,("%.6f"), pc )+
+                                 ",\"bfr\":" + String.format(Locale.US,("%.6f"), bfr )+
+                                 ",\"shf\":" + String.format(Locale.US,("%.6f"), shf) +
+                                 ",\"msi\":" + String.format(Locale.US,("%.6f"), msi) +
+                                 ",\"used\":" + String.format(Locale.US,("%.6f"), used) +
+                                 ",\"blocked\":" + slotsBlocked +
                                  "}";
-        /*URL url = new URL("http://127.0.0.1:5000/estimador/ratio");
+        URL url = new URL("http://127.0.0.1:5000/estimador/ratio");
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-type", "application/json");
@@ -351,12 +357,97 @@ public class Utils {
             while ((responseLine = br.readLine()) != null) {
                 response.append(responseLine.trim());
             }
-            bfr = Double.parseDouble(response.toString());
-        }*/
+            pred = Double.parseDouble(response.toString());
+        }
 
-        String response = client.sendMessage(json);
-        bfr = Double.parseDouble(response);
+        //String response = client.sendMessage(json);
+        //pred = Double.parseDouble(response);
 
-        return bfr;
+
+        if(blocked){
+            writer.write(
+                    String.format(Locale.US,("%.6f"),entropy )+ " , " +
+                            String.format(Locale.US,("%.6f"), pc )+ " , " +
+                            String.format(Locale.US,("%.6f"), msi ) + " , " +
+                            String.format(Locale.US,("%.6f"), bfr )+ " , " +
+                            String.format(Locale.US,("%.6f"), shf )+ " , " +
+                            String.format(Locale.US,("%.6f"), used )+ " , " +
+                            slotsBlocked + " , " +
+                            String.format(Locale.US,("%.6f"), pred )+ " , "
+            );
+            writer.newLine();
+        }
+
+        return pred;
+    }
+
+
+    public static Graph copyGraph(Graph graph) {
+        Graph<Integer, Link> copy = new SimpleWeightedGraph<>(Link.class);
+
+        for (int i = 0; i < graph.vertexSet().size(); i++) {
+            System.out.println(i);
+            copy.addVertex(i);
+        }
+        List<Link> links = new ArrayList<>();
+        links.addAll(graph.edgeSet());
+        for(Link link : links) {
+            List<Core> cores = new ArrayList<>();
+            for (Core core : link.getCores()) {
+                List<FrecuencySlot> espectro = new ArrayList<>();
+
+                for (FrecuencySlot fs : core.getFs()){
+                    FrecuencySlot fsCopy = new FrecuencySlot(core.getBandwidth()/ core.getFs().size());
+                    fsCopy.setFree(fs.isFree());
+                    fsCopy.setLifetime(fs.getLifetime());
+                    espectro.add(fsCopy);
+                }
+                Core copyCore = new Core(core.getBandwidth(),espectro);
+                cores.add(copyCore);
+            }
+
+            Link clink = new Link(link.getDistance(),cores, link.getFrom(), link.getTo());
+            copy.addEdge(link.getFrom(),link.getTo(),clink);
+            copy.setEdgeWeight(clink,link.getDistance());
+        }
+        return copy;
+    }
+
+    public static boolean compareRoutes(EstablisedRoute r1, EstablisedRoute r2){
+        if(r1.getTimeLife() != r2.getTimeLife() ||
+                r1.getFs() != r2.getFs() ||
+                r1.getFsIndexBegin() != r2.getFsIndexBegin() ||
+                r1.getFrom() != r2.getFrom() ||
+                r1.getTo() != r2.getTo()
+        ){
+            return false;
+        }
+
+        if(r1.getPath().size() != r2.getPath().size())
+            return false;
+        String rs1, rs2;
+        for (int l = 0; l < r1.getPath().size(); l++){
+            rs1 = r1.getPath().get(l).getFrom() + "-" + r1.getPath().get(l).getTo();
+            rs2 = r2.getPath().get(l).getFrom() + "-" + r2.getPath().get(l).getTo();
+            if(!rs1.equals(rs2))
+                return false;
+        }
+        return true;
+    }
+
+    public static <T> T deepCopy(T obj)
+            throws Exception
+    {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        ObjectOutputStream out = new ObjectOutputStream(bout);
+
+        out.writeObject(obj);
+        out.flush();
+
+        ByteArrayInputStream bin = new ByteArrayInputStream(bout.toByteArray());
+        ObjectInputStream in = new ObjectInputStream(bin);
+
+        obj = (T) in.readObject();
+        return obj;
     }
 }

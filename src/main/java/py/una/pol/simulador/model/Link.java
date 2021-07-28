@@ -1,9 +1,10 @@
 package py.una.pol.simulador.model;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-public class Link {
+public class Link implements Serializable {
     private int distance;
     private List <Core> cores;
     private int from;

@@ -24,6 +24,10 @@ public class EstablisedRoute {
         this.timeLife = timeLife;
     }
 
+    public void subTimeLife(){
+        this.timeLife--;
+    }
+
     public int getFrom() {
         return from;
     }

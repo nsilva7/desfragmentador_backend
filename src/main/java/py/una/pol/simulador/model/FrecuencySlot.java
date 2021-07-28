@@ -1,8 +1,9 @@
 package py.una.pol.simulador.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class FrecuencySlot {
+public class FrecuencySlot implements Serializable {
     private int lifetime;
     private boolean free;
     private double fsWidh;
@@ -41,6 +42,8 @@ public class FrecuencySlot {
         if (this.free)
             return false;
         this.lifetime--;
+        if(this.lifetime < 0)
+            System.out.println("ERROR, LF MENOR A 0");
         if(this.lifetime == 0){
             this.free = true;
             return true;

@@ -52,39 +52,43 @@ public class SimuladorController {
 //    @PostMapping("/simular")
     @MessageMapping("/simular")
     public void simular(@RequestBody Options options) throws IOException {
-//        boolean [] testedx = new boolean[4];
-//        Arrays.fill(testedx, false);
-//        for (int k = 1; k < 60; k++){
-//            this.getCore(4, testedx);
-//        }
-//        pruebas();
-//        if(1 == 1)
-//            return ;
-        socketClient.startConnection("127.0.0.1",9999);
+
+        //socketClient.startConnection("127.0.0.1",9999);
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
         int wait;
-        Graph net = createTopology2("nsfnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
+        Graph net = createTopology2("usnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
+
         List<List<GraphPath>> kspList = new ArrayList<>();
         int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
-        FileWriter file = new FileWriter("predicciones.csv");
+        FileWriter file = new FileWriter("bloqueos.csv");
         BufferedWriter writer = new BufferedWriter(file);
-        double bfr, pred;
-
-        writer.write("Bfr, Prediccion, Error");
+        double pred = 0;
+        int slotsBlocked;
+        int demandsq = 0;
+        writer.write("Entropy, Pc, Msi, Bfr, Shf, % Uso, Slots Bloqueados, Prediccion");
         writer.newLine();
+
         for (int i = 0; i < options.getTime(); i++) {
+            boolean blocked = false;
             System.out.println("Tiempo: " + (i+1));
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
                     options.getFsRangeMin(), options.getFsRangeMax(),
                     net.vertexSet().size(), options.getErlang() / options.getLambda());
 
+
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
-           for(Demand demand : demands){
+            slotsBlocked = 0;
+            demandsq += demands.size();
+
+
+            if(pred >= 0.25)
+                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+
+            for(Demand demand : demands){
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
-                kspList.add(kspaths);
                 try {
                     boolean [] tested = new boolean[4];
                     Arrays.fill(tested, false);
@@ -99,27 +103,22 @@ public class SimuladorController {
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
                                 System.out.println("BLOQUEO");
-                                //Algorithms.aco_def(net,establishedRoutes,30,"ENTROPY",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                blocked = true;
+                                //System.out.println("Va a desfragmentar con :" + establishedRoutes.size() + " rutas");
+                                //Algorithms.aco_def(net,establishedRoutes,30,"BFR",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
+                                slotsBlocked += demand.getFs();
                             }
                         }else{
                             //Ruta establecida
                             establishedRoutes.add((EstablisedRoute) establisedRoute);
+                            kspList.add(kspaths);
                             Utils.assignFs((EstablisedRoute)establisedRoute, core);
                             //this.template.convertAndSend("/message",  establisedRoute);
                             //break;
                         }
-                        pred = Utils.getBfrIA(net, FSMinPC, options.getCapacity(), demand.isBlocked(), socketClient);
-                        bfr = Algorithms.BFR(net, options.getCapacity());
-                        writer.write(
-                                        String.format(Locale.US,("%.6f"),bfr )+ " , " +
-                                        String.format(Locale.US,("%.6f"),pred )+ " , " +
-                                        String.format(Locale.US,("%.6f"),(bfr - pred) ) + " , "
-                        );
-                        writer.newLine();
-
                         if(establisedRoute != null || demand.getBlocked())
                             break;
                     }
@@ -135,6 +134,23 @@ public class SimuladorController {
                 }
             }
 
+
+            pred = Utils.getPredIA(net, FSMinPC, options.getCapacity(), slotsBlocked, socketClient, writer, blocked);
+            System.out.println("Predicción: " + pred);
+
+            for(EstablisedRoute route : establishedRoutes){
+                route.subTimeLife();
+            }
+
+            for (int ri = 0; ri < establishedRoutes.size(); ri++){
+                EstablisedRoute route = establishedRoutes.get(ri);
+                if(route.getTimeLife() == 0){
+                    establishedRoutes.remove(ri);
+                    kspList.remove(ri);
+                }
+            }
+
+
             ReleasedSlots rSlots = new ReleasedSlots();
             rSlots.setTime(i + 2);
             rSlots.setReleased(true);
@@ -145,7 +161,8 @@ public class SimuladorController {
         Map<String, Boolean> map = new LinkedHashMap<>();
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
-        socketClient.stopConnection();
+        //socketClient.stopConnection();
+        System.out.println("Cantidad de demandas: " + demandsq);
         System.out.println("Fin Simulación");
         writer.close();
     }
