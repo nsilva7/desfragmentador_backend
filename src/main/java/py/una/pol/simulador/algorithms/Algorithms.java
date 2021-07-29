@@ -326,7 +326,6 @@ public class Algorithms {
             count = 0;
             sortProbabilities(probabilities);
             while(currentImprovement < improvement && count < establishedRoutes.size()) {
-                System.out.println("ANT: " + i + " count: " + count + " de: " + establishedRoutes.size());
                 sameReRouting = 0;
                 try {
                     graphAux = Utils.deepCopy(graph);
@@ -390,7 +389,7 @@ public class Algorithms {
                     if(blocked)
                         currentImprovement = 0;
                     else {
-                        currentImprovement = improvementCalculation(graphAux, metric, capacity, graphEntropy, graphBFR, graphMSI, graphPC, FSminPC);
+                        currentImprovement = improvementCalculation(graphAux, metric, capacity, graphEntropy, graphBFR, graphMSI, graphPC, FSminPC, i, count);
                     }
 
                     count++;
@@ -430,7 +429,7 @@ public class Algorithms {
         }
     }
 
-    private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC){
+    private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC, int i, int count){
 
         switch (metric) {
             case "ENTROPY":
@@ -438,7 +437,7 @@ public class Algorithms {
                 return 100 - currentGraphEntropy*100/graphEntropy;
             case "BFR":
                double currentBFR = BFR(graph, capacity);
-               //System.out.println(graphBFR + " - " + currentBFR);
+               System.out.println("En ANT: " + i + ", count: " + count + " - {" + graphBFR + " - " + currentBFR + "}");
                return 100 - ((roundDecimals(currentBFR, 6) * 100)/roundDecimals(graphBFR, 6));
             case "MSI":
                 double currentMSI = MSI(graph);

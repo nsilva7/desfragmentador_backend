@@ -56,16 +56,15 @@ public class SimuladorController {
         //socketClient.startConnection("127.0.0.1",9999);
         List<Demand> demands;
         List<EstablisedRoute> establishedRoutes = new ArrayList<EstablisedRoute>();
-        int wait;
         Graph net = createTopology2("usnet.json", options.getCores(), options.getFsWidth(), options.getCapacity());
-
         List<List<GraphPath>> kspList = new ArrayList<>();
         int FSMinPC = (int) (options.getFsRangeMax() - ((options.getFsRangeMax() - options.getFsRangeMin()) * 0.3));
         FileWriter file = new FileWriter("bloqueos.csv");
         BufferedWriter writer = new BufferedWriter(file);
         double pred = 0;
         int slotsBlocked;
-        int demandsq = 0;
+        int demandsQ = 0;
+        int defragsQ = 0, blocksQ = 0;
         writer.write("Entropy, Pc, Msi, Bfr, Shf, % Uso, Slots Bloqueados, Prediccion");
         writer.newLine();
 
@@ -80,12 +79,13 @@ public class SimuladorController {
 
             KShortestSimplePaths ksp = new KShortestSimplePaths(net);
             slotsBlocked = 0;
-            demandsq += demands.size();
+            demandsQ += demands.size();
 
 
-            if(pred >= 0.25)
-                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
-
+//            if(pred >= 0.3){
+//                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+//                defragsQ++;
+//            }
             for(Demand demand : demands){
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
@@ -102,14 +102,15 @@ public class SimuladorController {
                             tested[core] = true;//Se marca el core probado
                             if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
                                 //Bloqueo
-                                System.out.println("BLOQUEO");
+                                //System.out.println("BLOQUEO");
                                 blocked = true;
                                 //System.out.println("Va a desfragmentar con :" + establishedRoutes.size() + " rutas");
-                                //Algorithms.aco_def(net,establishedRoutes,30,"BFR",3,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
                                 slotsBlocked += demand.getFs();
+                                blocksQ++;
                             }
                         }else{
                             //Ruta establecida
@@ -163,7 +164,9 @@ public class SimuladorController {
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
         //socketClient.stopConnection();
-        System.out.println("Cantidad de demandas: " + demandsq);
+        System.out.println("Cantidad de demandas: " + demandsQ);
+        System.out.println("Cantidad de bloqueos: " + blocksQ);
+        System.out.println("Cantidad de defragmentaciones: " + defragsQ);
         System.out.println("Fin Simulación");
         writer.close();
     }
