@@ -51,7 +51,7 @@ public class SimuladorController {
 //    @CrossOrigin(origins = "http://localhost:4300")
 //    @PostMapping("/simular")
     @MessageMapping("/simular")
-    public void simular(@RequestBody Options options) throws IOException {
+    public void simular(@RequestBody Options options) throws Exception {
 
         //socketClient.startConnection("127.0.0.1",9999);
         List<Demand> demands;
@@ -71,7 +71,7 @@ public class SimuladorController {
 
         for (int i = 0; i < options.getTime(); i++) {
             boolean blocked = false;
-            System.out.println("Tiempo: " + (i+1));
+            System.out.println("Tiempo: " + (i+1) + ", Predicción: " + pred);
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
                     options.getFsRangeMin(), options.getFsRangeMax(),
@@ -136,7 +136,7 @@ public class SimuladorController {
 
 
             pred = Utils.getPredIA(net, FSMinPC, options.getCapacity(), slotsBlocked, socketClient, writer, blocked);
-            System.out.println("Predicción: " + pred);
+            //System.out.println("Predicción: " + pred);
 
             for(EstablisedRoute route : establishedRoutes){
                 route.subTimeLife();
@@ -147,6 +147,7 @@ public class SimuladorController {
                 if(route.getTimeLife() == 0){
                     establishedRoutes.remove(ri);
                     kspList.remove(ri);
+                    ri--;
                 }
             }
 

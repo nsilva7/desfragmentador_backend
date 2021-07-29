@@ -265,7 +265,7 @@ public class Algorithms {
 
     }
 
-    public static Graph aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws JsonProcessingException {
+    public static Graph aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws Exception {
         double e0 = System.currentTimeMillis();
         System.out.println("INICIA DESFRAGMENTACIÓN ACO CON: " + establishedRoutes.size() + " RUTAS");
         double[] probabilities = new double[establishedRoutes.size()];
@@ -287,7 +287,6 @@ public class Algorithms {
         int betterRoutesQ = establishedRoutes.size();
         int count;
         int sameReRouting = 0;
-        ObjectMapper objectMapper = new ObjectMapper();
 
         boolean blocked = false;
 
@@ -313,7 +312,6 @@ public class Algorithms {
 
         double summ;
         for (int i = 0; i < antsq; i++) {
-            System.out.println("Ant: " + i);
             selectedRoutes.clear();
             usedIndexes.clear();
             currentImprovement = 0;
@@ -328,14 +326,11 @@ public class Algorithms {
             count = 0;
             sortProbabilities(probabilities);
             while(currentImprovement < improvement && count < establishedRoutes.size()) {
-                //System.out.println("ANT: " + i + " count: " + count + " de: " + establishedRoutes.size());
+                System.out.println("ANT: " + i + " count: " + count + " de: " + establishedRoutes.size());
                 sameReRouting = 0;
                 try {
-                    //graphAux = (Graph) ((AbstractBaseGraph)graph).clone();
-                    //graphAux = Utils.copyGraph(graph);
                     graphAux = Utils.deepCopy(graph);
-                    KShortestSimplePaths kspc = new KShortestSimplePaths(graphAux);
-                    //graphAux = objectMapper.readValue(objectMapper.writeValueAsString(graph), SimpleWeightedGraph.class);
+
                     int routeIndex = selectRoute(probabilities,usedIndexes);
                     usedIndexes.add(routeIndex);
                     selectedRoutes.add(establishedRoutes.get(routeIndex));
@@ -343,8 +338,6 @@ public class Algorithms {
                     for (int j = 0; j < usedIndexes.size(); j++) {
                         Utils.deallocateFs(graphAux,establishedRoutes.get(usedIndexes.get(j)));
                     }
-
-
                     if(selectedRoutes.size() > 1) {
                         sortRoutes(selectedRoutes, usedIndexes);
                     }
@@ -353,9 +346,7 @@ public class Algorithms {
                     actualOptimalSelectedRoutes.clear();
                     for (int j = 0; j < selectedRoutes.size() ; j++) {
                         Demand demand = new Demand(selectedRoutes.get(j).getFrom(), selectedRoutes.get(j).getTo(), selectedRoutes.get(j).getFs(), selectedRoutes.get(j).getTimeLife());
-
-                        List<GraphPath> kspaths = kspc.getPaths(demand.getSource(), demand.getDestination(), 5);
-                        //List<GraphPath> kspaths = kspList.get(usedIndexes.get(j));
+                        List<GraphPath> kspaths = kspList.get(usedIndexes.get(j));
                         boolean [] tested = new boolean[selectedRoutes.get(j).getPath().get(0).getCores().size()];
                         Arrays.fill(tested, false);
                         int core;
@@ -363,19 +354,19 @@ public class Algorithms {
                             core = Utils.getCore(selectedRoutes.get(j).getPath().get(0).getCores().size(), tested);
                             Class<?>[] paramTypes = {Graph.class, List.class, Demand.class, int.class, int.class};
                             Method method = Algorithms.class.getMethod(routingAlg, paramTypes);
-
-                            for(GraphPath kspathss : kspaths ) {
-                                for (Object path : kspathss.getEdgeList()) {
-
-                                    Link aux = (Link)path;
-                                    path =  graphAux.getEdge(aux.getFrom(), aux.getTo());
-                                }
+                            List<GraphPath> kspathAux = new ArrayList<>();
+                            for (GraphPath<Integer, Link> kspathss : kspaths){
+                                   List<Link> edgeList = new ArrayList<>();
+                                   double weight = 0;
+                                   for ( Link path : kspathss.getEdgeList()){
+                                       Link aux = (Link) graphAux.getEdge(path.getFrom(), path.getTo());
+                                       edgeList.add(aux);
+                                       weight += aux.getDistance();
+                                   }
+                                   kspathAux.add(new GraphWalk(graphAux, kspathss.getStartVertex(), kspathss.getEndVertex(), edgeList, weight));
                             }
-                            Object establisedRoute = method.invoke(Algorithms.class, graphAux, kspaths, demand, capacity, core);
-                            //((EstablisedRoute)establisedRoute).setPath(graphAux.ge);
-                            //for(Link path : ((EstablisedRoute) establisedRoute).getPath()){
-                                //path = (Link) graphAux.getEdge(path.getFrom(), path.getTo());
-                            //}
+                            Object establisedRoute = method.invoke(Algorithms.class, graphAux, kspathAux, demand, capacity, core);
+
                             if(establisedRoute == null){
                                 tested[core] = true;//Se marca el core probado
                                 if(!Arrays.asList(tested).contains(false)){//Se ve si ya se probaron todos los cores
@@ -387,8 +378,6 @@ public class Algorithms {
                                 Utils.assignFs((EstablisedRoute)establisedRoute, core);
                                 actualOptimalSelectedRoutes.add((EstablisedRoute)establisedRoute);
 
-                                List<Link> linksss = new ArrayList<>();
-                                linksss.addAll(graph.edgeSet());
 
                                 if(Utils.compareRoutes((EstablisedRoute)establisedRoute, selectedRoutes.get(j)))
                                     sameReRouting++;
@@ -400,8 +389,10 @@ public class Algorithms {
                         System.out.println("currentImprovement: " + currentImprovement + " Sale por mejora");
                     if(blocked)
                         currentImprovement = 0;
-                    else
-                        currentImprovement = improvementCalculation(graphAux, metric, capacity,graphEntropy,graphBFR,graphMSI,graphPC,FSminPC);
+                    else {
+                        currentImprovement = improvementCalculation(graphAux, metric, capacity, graphEntropy, graphBFR, graphMSI, graphPC, FSminPC);
+                    }
+
                     count++;
                     if((selectedRoutes.size() - sameReRouting) > betterRoutesQ) {
                         System.out.println("Sale por break");
@@ -417,8 +408,7 @@ public class Algorithms {
                 System.out.println("Llego con currentImprovement: " + currentImprovement + " en count: " + count + " y ant: " + i);
                 optimalSelectedRoutes.clear();
                 optimalSelectedRoutes.addAll(selectedRoutes);
-                bestGraph = (Graph) ((AbstractBaseGraph)graphAux).clone();
-                //bestGraph = objectMapper.readValue(objectMapper.writeValueAsString(graphAux), Graph.class);
+                bestGraph =  Utils.deepCopy(graphAux);
                 betterRoutesQ = optimalSelectedRoutes.size();
                 success = true;
                 for(int index : usedIndexes){
@@ -438,7 +428,6 @@ public class Algorithms {
         }else{
             return graph;
         }
-        //return success;
     }
 
     private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC){
@@ -449,7 +438,7 @@ public class Algorithms {
                 return 100 - currentGraphEntropy*100/graphEntropy;
             case "BFR":
                double currentBFR = BFR(graph, capacity);
-               System.out.println(graphBFR + " - " + currentBFR);
+               //System.out.println(graphBFR + " - " + currentBFR);
                return 100 - ((roundDecimals(currentBFR, 6) * 100)/roundDecimals(graphBFR, 6));
             case "MSI":
                 double currentMSI = MSI(graph);

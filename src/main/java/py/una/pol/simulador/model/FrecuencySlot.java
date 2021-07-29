@@ -42,8 +42,8 @@ public class FrecuencySlot implements Serializable {
         if (this.free)
             return false;
         this.lifetime--;
-        if(this.lifetime < 0)
-            System.out.println("ERROR, LF MENOR A 0");
+        //if(this.lifetime < 0)
+            //System.out.println("ERROR, LF MENOR A 0: " + this.lifetime);
         if(this.lifetime == 0){
             this.free = true;
             return true;
