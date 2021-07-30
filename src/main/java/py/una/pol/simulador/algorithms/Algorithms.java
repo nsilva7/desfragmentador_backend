@@ -265,7 +265,7 @@ public class Algorithms {
 
     }
 
-    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws Exception {
+    public static Map<String, Graph> aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws Exception {
         double e0 = System.currentTimeMillis();
         System.out.println("INICIA DESFRAGMENTACIÓN ACO CON: " + establishedRoutes.size() + " RUTAS");
         double[] probabilities = new double[establishedRoutes.size()];
@@ -425,6 +425,7 @@ public class Algorithms {
             }
         }
         System.out.println("Tiempo de ejecución ACO: " + (System.currentTimeMillis() - e0) + " ms");
+        Map<String,Graph> result = new HashMap<>();
         if(success){
             List<EstablisedRoute> newEstablishedRoutes = new ArrayList<>();
             int i = 0;
@@ -446,9 +447,13 @@ public class Algorithms {
             }
             establishedRoutes.clear();
             establishedRoutes.addAll(newEstablishedRoutes);
-            graph =  bestGraph;
+            graph =  Utils.deepCopy(bestGraph);
+            result.put("graph", graph);
+        }else{
+            result.put("graph", null);
         }
-        return success;
+
+        return result;
     }
 
     private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC, int i, int count){

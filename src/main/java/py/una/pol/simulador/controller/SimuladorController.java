@@ -70,15 +70,17 @@ public class SimuladorController {
         int antsq = 20;
         int last_defrag_time = 0;
         int tmin = 5;//Shortest interval between adjacent DF operations when the last failed
+        int period = 100;
         boolean defragS = true;
         String aco_def_metric = "BFR";
         String demands_type = "Fijo";
+        Map<String, Graph> defResult = new HashMap<>();
         writer.write("Entropy, Pc, Msi, Bfr, Shf, % Uso, Slots Bloqueados, Prediccion");
         writer.newLine();
 
         for (int i = 0; i < options.getTime(); i++) {
             boolean blocked = false;
-            System.out.println("Tiempo: " + (i+1) + ", Predicción: " + pred);
+            System.out.println("Tiempo: " + (i+1) + ", Predicción: " + pred + ", Cantidad de rutas activas: " + establishedRoutes.size());
             demands = Utils.generateDemands(
                     options.getLambda(), options.getTime(),
                     options.getFsRangeMin(), options.getFsRangeMax(),
@@ -89,13 +91,15 @@ public class SimuladorController {
             slotsBlocked = 0;
             demandsQ += demands.size();
 
-
             if(pred >= ia_prob && (defragS || (i - last_defrag_time >= tmin))){
-                defragS = Algorithms.aco_def(net,establishedRoutes,antsq,aco_def_metric,FSMinPC,aco_improv,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                defResult = Algorithms.aco_def(net,establishedRoutes,antsq,aco_def_metric,FSMinPC,aco_improv,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+
                 defragsQ++;
-                if(!defragS){
+                if(defResult.get("graph") == null){
                     defragsF++;
                     last_defrag_time = i;
+                }else{
+                    net = defResult.get("graph");
                 }
             }
             for(Demand demand : demands){
@@ -117,7 +121,14 @@ public class SimuladorController {
                                 //System.out.println("BLOQUEO");
                                 blocked = true;
                                 //System.out.println("Va a desfragmentar con :" + establishedRoutes.size() + " rutas");
-                                //net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                ///if((defragS || (i - last_defrag_time >= tmin))){
+                                    //defragS = Algorithms.aco_def(net,establishedRoutes,antsq,aco_def_metric,FSMinPC,aco_improv,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                    //defragsQ++;
+                                    //if(!defragS){
+                                    //    defragsF++;
+                                    //    last_defrag_time = i;
+                                    //}
+                                //}
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
@@ -146,11 +157,7 @@ public class SimuladorController {
                     e.printStackTrace();
                 }
             }
-
-
             pred = Utils.getPredIA(net, FSMinPC, options.getCapacity(), slotsBlocked, socketClient, writer, blocked);
-            //System.out.println("Predicción: " + pred);
-
             for(EstablisedRoute route : establishedRoutes){
                 route.subTimeLife();
             }
@@ -176,6 +183,7 @@ public class SimuladorController {
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
         //socketClient.stopConnection();
+        System.out.println("Desfragmentaciones en bloqueos");
         System.out.println(options.getErlang() + " erlangs, " + ia_prob + " para desfragmentar, " + aco_improv + " de mejora, " + antsq + " hormigas" + ", tipo de demandas " + demands_type);
         System.out.println("Cantidad de demandas: " + demandsQ);
         System.out.println("Cantidad de bloqueos: " + blocksQ);
