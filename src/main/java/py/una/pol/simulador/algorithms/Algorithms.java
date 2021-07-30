@@ -281,6 +281,8 @@ public class Algorithms {
         Graph bestGraph = graph;
         boolean success = false;
         ArrayList<Integer> usedIndexes =  new ArrayList<>();
+        ArrayList<Integer> optimalIndexes =  new ArrayList<>();
+        ArrayList<Integer> actualOptimalIndexes =  new ArrayList<>();
         List<EstablisedRoute> selectedRoutes = new ArrayList<>();
         List<EstablisedRoute> optimalSelectedRoutes = new ArrayList<>();
         List<EstablisedRoute> actualOptimalSelectedRoutes = new ArrayList<>();
@@ -343,6 +345,7 @@ public class Algorithms {
 
                     blocked = false;
                     actualOptimalSelectedRoutes.clear();
+                    actualOptimalIndexes.clear();
                     for (int j = 0; j < selectedRoutes.size() ; j++) {
                         Demand demand = new Demand(selectedRoutes.get(j).getFrom(), selectedRoutes.get(j).getTo(), selectedRoutes.get(j).getFs(), selectedRoutes.get(j).getTimeLife());
                         List<GraphPath> kspaths = kspList.get(usedIndexes.get(j));
@@ -376,7 +379,7 @@ public class Algorithms {
                                 //Ruta establecida
                                 Utils.assignFs((EstablisedRoute)establisedRoute, core);
                                 actualOptimalSelectedRoutes.add((EstablisedRoute)establisedRoute);
-
+                                actualOptimalIndexes.add(usedIndexes.get(j));
 
                                 if(Utils.compareRoutes((EstablisedRoute)establisedRoute, selectedRoutes.get(j)))
                                     sameReRouting++;
@@ -406,7 +409,9 @@ public class Algorithms {
             if((currentImprovement >= improvement) && betterRoutesQ > actualOptimalSelectedRoutes.size() - sameReRouting){
                 System.out.println("Llego con currentImprovement: " + currentImprovement + " en count: " + count + " y ant: " + i);
                 optimalSelectedRoutes.clear();
-                optimalSelectedRoutes.addAll(selectedRoutes);
+                optimalIndexes.clear();
+                optimalSelectedRoutes.addAll(actualOptimalSelectedRoutes);
+                optimalIndexes.addAll(actualOptimalIndexes);
                 bestGraph =  Utils.deepCopy(graphAux);
                 betterRoutesQ = optimalSelectedRoutes.size();
                 success = true;
@@ -423,6 +428,26 @@ public class Algorithms {
         }
         System.out.println("Tiempo de ejecución ACO: " + (System.currentTimeMillis() - e0) + " ms");
         if(success){
+            List<EstablisedRoute> newEstablishedRoutes = new ArrayList<>();
+            int i = 0;
+            for(EstablisedRoute route: establishedRoutes){
+                List<Link> links = new ArrayList<>();
+                List<Link> path;
+                if(optimalIndexes.contains(i)){
+                    path = actualOptimalSelectedRoutes.get(usedIndexes.indexOf(i)).getPath();
+                }else {
+                    path = route.getPath();
+                }
+                for(Link link:path){
+                    Link newLink = (Link) bestGraph.getEdge(link.getFrom(),link.getTo());
+                    links.add(newLink);
+                }
+                EstablisedRoute newRoute = new EstablisedRoute(links,route.getFsIndexBegin(),route.getFs(),route.getTimeLife(),route.getFrom(),route.getTo(),route.getCore());
+                newEstablishedRoutes.add(newRoute);
+                i++;
+            }
+            establishedRoutes.clear();
+            establishedRoutes.addAll(newEstablishedRoutes);
             return bestGraph;
         }else{
             return graph;
