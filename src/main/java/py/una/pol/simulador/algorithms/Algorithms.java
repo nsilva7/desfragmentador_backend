@@ -265,7 +265,7 @@ public class Algorithms {
 
     }
 
-    public static Graph aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws Exception {
+    public static boolean aco_def(Graph graph, List<EstablisedRoute> establishedRoutes, int antsq, String metric, int FSminPC, double improvement, String routingAlg, KShortestSimplePaths ksp, int capacity, List<List<GraphPath>> kspList) throws Exception {
         double e0 = System.currentTimeMillis();
         System.out.println("INICIA DESFRAGMENTACIÓN ACO CON: " + establishedRoutes.size() + " RUTAS");
         double[] probabilities = new double[establishedRoutes.size()];
@@ -387,8 +387,6 @@ public class Algorithms {
                             }
                         }
                     }
-                    if(currentImprovement >= improvement)
-                        System.out.println("currentImprovement: " + currentImprovement + " Sale por mejora");
                     if(blocked)
                         currentImprovement = 0;
                     else {
@@ -448,10 +446,9 @@ public class Algorithms {
             }
             establishedRoutes.clear();
             establishedRoutes.addAll(newEstablishedRoutes);
-            return bestGraph;
-        }else{
-            return graph;
+            graph =  bestGraph;
         }
+        return success;
     }
 
     private static double improvementCalculation(Graph graph, String metric, int capacity, double graphEntropy, double graphBFR, double graphMSI,double graphPC, int fsMinPC, int i, int count){
@@ -462,7 +459,7 @@ public class Algorithms {
                 return 100 - currentGraphEntropy*100/graphEntropy;
             case "BFR":
                double currentBFR = BFR(graph, capacity);
-               System.out.println("En ANT: " + i + ", count: " + count + " - {" + graphBFR + " - " + currentBFR + "}");
+               //System.out.println("En ANT: " + i + ", count: " + count + " - {" + graphBFR + " - " + currentBFR + "}");
                return 100 - ((roundDecimals(currentBFR, 6) * 100)/roundDecimals(graphBFR, 6));
             case "MSI":
                 double currentMSI = MSI(graph);

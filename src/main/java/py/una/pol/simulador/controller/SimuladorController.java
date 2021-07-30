@@ -64,7 +64,15 @@ public class SimuladorController {
         double pred = 0;
         int slotsBlocked;
         int demandsQ = 0;
-        int defragsQ = 0, blocksQ = 0;
+        int defragsQ = 0, blocksQ = 0, defragsF = 0;
+        double ia_prob = 0.3;
+        int aco_improv = 20;
+        int antsq = 20;
+        int last_defrag_time = 0;
+        int tmin = 5;//Shortest interval between adjacent DF operations when the last failed
+        boolean defragS = true;
+        String aco_def_metric = "BFR";
+        String demands_type = "Fijo";
         writer.write("Entropy, Pc, Msi, Bfr, Shf, % Uso, Slots Bloqueados, Prediccion");
         writer.newLine();
 
@@ -82,10 +90,14 @@ public class SimuladorController {
             demandsQ += demands.size();
 
 
-//            if(pred >= 0.3){
-//                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
-//                defragsQ++;
-//            }
+            if(pred >= ia_prob && (defragS || (i - last_defrag_time >= tmin))){
+                defragS = Algorithms.aco_def(net,establishedRoutes,antsq,aco_def_metric,FSMinPC,aco_improv,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                defragsQ++;
+                if(!defragS){
+                    defragsF++;
+                    last_defrag_time = i;
+                }
+            }
             for(Demand demand : demands){
                 //k caminos más cortos entre source y destination de la demanda actual
                 List<GraphPath> kspaths = ksp.getPaths(demand.getSource(), demand.getDestination(), 5);
@@ -105,7 +117,7 @@ public class SimuladorController {
                                 //System.out.println("BLOQUEO");
                                 blocked = true;
                                 //System.out.println("Va a desfragmentar con :" + establishedRoutes.size() + " rutas");
-                                net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
+                                //net = Algorithms.aco_def(net,establishedRoutes,20,"BFR",FSMinPC,20,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
                                 demand.setBlocked(true);
                                 //this.template.convertAndSend("/message",  demand);
                                 //break;
@@ -164,9 +176,11 @@ public class SimuladorController {
         map.put("end", true);
         //this.template.convertAndSend("/message",  map);
         //socketClient.stopConnection();
+        System.out.println(options.getErlang() + " erlangs, " + ia_prob + " para desfragmentar, " + aco_improv + " de mejora, " + antsq + " hormigas" + ", tipo de demandas " + demands_type);
         System.out.println("Cantidad de demandas: " + demandsQ);
         System.out.println("Cantidad de bloqueos: " + blocksQ);
         System.out.println("Cantidad de defragmentaciones: " + defragsQ);
+        System.out.println("Cantidad de desfragmentaciones fallidas: " + defragsF);
         System.out.println("Fin Simulación");
         writer.close();
     }
