@@ -69,7 +69,7 @@ public class SimuladorController {
         int aco_improv = 20;
         int antsq = 20;
         int last_defrag_time = 0;
-        int tmin = 5;//Shortest interval between adjacent DF operations when the last failed
+        int tmin = 10;//Shortest interval between adjacent DF operations when the last failed
         int period = 100;
         boolean defragS = true;
         String aco_def_metric = "BFR";
@@ -92,15 +92,22 @@ public class SimuladorController {
             demandsQ += demands.size();
 
             if(pred >= ia_prob && (defragS || (i - last_defrag_time >= tmin))){
+
+                System.out.println("Bfr antes de aco: " + Algorithms.BFR(net, options.getCapacity()));
                 defResult = Algorithms.aco_def(net,establishedRoutes,antsq,aco_def_metric,FSMinPC,aco_improv,options.getRoutingAlg(),ksp,options.getCapacity(), kspList);
 
                 defragsQ++;
                 if(defResult.get("graph") == null){
+                    System.out.println("Fallo desfragmentacion Aco");
                     defragsF++;
                     last_defrag_time = i;
+                    defragS = false;
                 }else{
                     net = defResult.get("graph");
+                    defragS = true;
                 }
+                System.out.println("Bfr despues de aco: " + Algorithms.BFR(net, options.getCapacity()));
+
             }
             for(Demand demand : demands){
                 //k caminos más cortos entre source y destination de la demanda actual
